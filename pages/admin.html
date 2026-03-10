@@ -229,7 +229,7 @@
   <script type="module">
     import { requireAdmin, logout } from '../js/auth.js';
     import { listarFuncionarios, salvarPontoManual, relatorioDiario, listarPontosPorMes, salvarEscalaSabadoSemanal, listarEscalaSabadoSemanal } from '../js/admin.js';
-    import { exportarCsv } from '../js/csvExport.js';
+    import { exportarCsv, exportarCsvComSecoes } from '../js/csvExport.js';
     import { calcularHorasTrabalhadas, calcularSaldoMes, getMetaDiaria, getInicioSemanaISO, minutesToHHMM } from '../js/horas.js';
     import { initMobileMenu } from '../js/mobileMenu.js';
 
@@ -256,6 +256,7 @@
     let funcionarios = [];
     let linhasRelatorioDiario = [];
     let linhasRelatorioMensal = [];
+    let linhasRelatorioMensalDetalhado = [];
 
     function showMsg(text, type = 'ok') {
       msg.innerHTML = `<div class="msg ${type}">${text}</div>`;
@@ -434,6 +435,7 @@
       const tbody = document.getElementById('tbodyMes');
       tbody.innerHTML = '';
       linhasRelatorioMensal = [];
+      linhasRelatorioMensalDetalhado = [];
 
       agrupado.forEach((value) => {
         const total = calcularSaldoMes(value.lista);
@@ -457,6 +459,26 @@
           metaTexto,
           saldoTexto
         ]);
+
+        value.lista
+          .slice()
+          .sort((a, b) => String(a.data).localeCompare(String(b.data)))
+          .forEach((item) => {
+            const horasDia = item.horasTrabalhadasMinutos ?? calcularHorasTrabalhadas(item);
+            const saldoDia = item.saldoMinutos ?? (horasDia !== null ? (calcularSaldoMes([item]).saldoAcumulado) : null);
+            linhasRelatorioMensalDetalhado.push([
+              rMes.value,
+              funcionarioNome,
+              item.data,
+              item.entrada || '--:--',
+              item.inicio_intervalo || '--:--',
+              item.fim_intervalo || '--:--',
+              item.saida || '--:--',
+              minutesToHHMM(horasDia),
+              minutesToHHMM(item.metaMinutos),
+              minutesToHHMM(saldoDia)
+            ]);
+          });
       });
     }
 
@@ -479,10 +501,20 @@
         return;
       }
 
-      exportarCsv({
+      exportarCsvComSecoes({
         fileName: `relatorio-mensal-${rMes.value}.csv`,
-        headers: ['Mes', 'Funcionario', 'Horas trabalhadas', 'Meta mensal', 'Saldo total'],
-        rows: linhasRelatorioMensal
+        sections: [
+          {
+            title: 'Resumo',
+            headers: ['Mes', 'Funcionario', 'Horas trabalhadas', 'Meta mensal', 'Saldo total'],
+            rows: linhasRelatorioMensal
+          },
+          {
+            title: 'Dia a dia',
+            headers: ['Mes', 'Funcionario', 'Data', 'Entrada', 'Inicio intervalo', 'Fim intervalo', 'Saida', 'Horas trabalhadas', 'Meta do dia', 'Saldo do dia'],
+            rows: linhasRelatorioMensalDetalhado
+          }
+        ]
       });
     });
 
