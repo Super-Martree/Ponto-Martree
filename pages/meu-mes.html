@@ -71,6 +71,7 @@
               <h2>Indicadores mensais</h2>
               <p class="small">Panorama geral do per&iacute;odo, com destaque para saldos positivos, negativos e acumulado.</p>
             </div>
+            <button id="exportarMeuMes" type="button" class="secondary">Exportar CSV</button>
           </div>
 
           <div class="kpi-grid">
@@ -106,6 +107,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
     import { requireAuth, getFuncionarioLogado, logout } from '../js/auth.js';
+    import { exportarCsv } from '../js/csvExport.js';
     import { supabase } from '../js/supabaseClient.js';
     import { calcularHorasTrabalhadas, calcularSaldoDia, calcularSaldoMes, getInicioSemanaISO, getMetaDiaria, minutesToHHMM } from '../js/horas.js';
     import { initMobileMenu } from '../js/mobileMenu.js';
@@ -113,6 +115,7 @@
     const mesInput = document.getElementById('mes');
     const tbody = document.getElementById('tbodyPontos');
     const navAdminLink = document.getElementById('navAdminLink');
+    const btnExportarMeuMes = document.getElementById('exportarMeuMes');
 
     initMobileMenu();
     document.getElementById('logoutBtn').addEventListener('click', logout);
@@ -121,6 +124,7 @@
     mesInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
     let funcionario;
+    let linhasExportacaoMes = [];
 
     function normalizarDataISO(value) {
       return String(value || '').slice(0, 10);
@@ -216,6 +220,7 @@
       if (error) throw error;
 
       tbody.innerHTML = '';
+      linhasExportacaoMes = [];
 
       const linhas = data.map((ponto) => {
         const horas = calcularHorasTrabalhadas(ponto);
@@ -233,17 +238,30 @@
       for (const item of linhas) {
         const tr = document.createElement('tr');
         const saldoDiaClass = saldoClass(item.saldoMinutos ?? 0);
+        const horasTexto = minutesToHHMM(item.horasTrabalhadasMinutos);
+        const metaTexto = minutesToHHMM(item.metaMinutos);
+        const saldoTexto = minutesToHHMM(item.saldoMinutos);
         tr.innerHTML = `
           <td>${item.data}</td>
           <td>${item.entrada || '--:--'}</td>
           <td>${item.inicio_intervalo || '--:--'}</td>
           <td>${item.fim_intervalo || '--:--'}</td>
           <td>${item.saida || '--:--'}</td>
-          <td>${minutesToHHMM(item.horasTrabalhadasMinutos)}</td>
-          <td>${minutesToHHMM(item.metaMinutos)}</td>
-          <td class="${saldoDiaClass}">${minutesToHHMM(item.saldoMinutos)}</td>
+          <td>${horasTexto}</td>
+          <td>${metaTexto}</td>
+          <td class="${saldoDiaClass}">${saldoTexto}</td>
         `;
         tbody.appendChild(tr);
+        linhasExportacaoMes.push([
+          item.data,
+          item.entrada || '--:--',
+          item.inicio_intervalo || '--:--',
+          item.fim_intervalo || '--:--',
+          item.saida || '--:--',
+          horasTexto,
+          metaTexto,
+          saldoTexto
+        ]);
       }
 
       const total = calcularSaldoMes(linhas);
@@ -258,6 +276,19 @@
     }
 
     mesInput.addEventListener('change', carregarPontos);
+
+    btnExportarMeuMes.addEventListener('click', () => {
+      if (!linhasExportacaoMes.length) {
+        alert('Nao ha dados no relatorio mensal para exportar.');
+        return;
+      }
+
+      exportarCsv({
+        fileName: `meu-mes-${mesInput.value}.csv`,
+        headers: ['Data', 'Entrada', 'Inicio intervalo', 'Fim intervalo', 'Saida', 'Horas trabalhadas', 'Meta do dia', 'Saldo do dia'],
+        rows: linhasExportacaoMes
+      });
+    });
 
     (async () => {
       const user = await requireAuth();

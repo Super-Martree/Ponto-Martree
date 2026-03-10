@@ -157,6 +157,7 @@
               <h2>Relat&oacute;rio di&aacute;rio</h2>
               <p class="small">Consulta do status de ponto por dia com filtros compactos e leitura clara.</p>
             </div>
+            <button id="exportarRelatorioDia" type="button" class="secondary">Exportar CSV</button>
           </div>
 
           <div class="row">
@@ -192,6 +193,7 @@
               <h2>Relat&oacute;rio mensal</h2>
               <p class="small">Indicadores consolidados por funcion&aacute;rio para fechamento e acompanhamento gerencial.</p>
             </div>
+            <button id="exportarRelatorioMes" type="button" class="secondary">Exportar CSV</button>
           </div>
 
           <div class="row">
@@ -227,6 +229,7 @@
   <script type="module">
     import { requireAdmin, logout } from '../js/auth.js';
     import { listarFuncionarios, salvarPontoManual, relatorioDiario, listarPontosPorMes, salvarEscalaSabadoSemanal, listarEscalaSabadoSemanal } from '../js/admin.js';
+    import { exportarCsv } from '../js/csvExport.js';
     import { calcularHorasTrabalhadas, calcularSaldoMes, getMetaDiaria, getInicioSemanaISO, minutesToHHMM } from '../js/horas.js';
     import { initMobileMenu } from '../js/mobileMenu.js';
 
@@ -239,6 +242,8 @@
     const rMes = document.getElementById('rMes');
     const rFuncDia = document.getElementById('rFuncDia');
     const rFuncMes = document.getElementById('rFuncMes');
+    const btnExportarRelatorioDia = document.getElementById('exportarRelatorioDia');
+    const btnExportarRelatorioMes = document.getElementById('exportarRelatorioMes');
     initMobileMenu();
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
@@ -249,6 +254,8 @@
     document.getElementById('eDataSemana').value = rData.value;
 
     let funcionarios = [];
+    let linhasRelatorioDiario = [];
+    let linhasRelatorioMensal = [];
 
     function showMsg(text, type = 'ok') {
       msg.innerHTML = `<div class="msg ${type}">${text}</div>`;
@@ -341,22 +348,35 @@
 
       const tbody = document.getElementById('tbodyDia');
       tbody.innerHTML = '';
+      linhasRelatorioDiario = [];
 
       for (const item of registros) {
         const horas = item.ponto ? calcularHorasTrabalhadas(item.ponto) : null;
         const status = item.ponto
           ? '<span class="badge success">OK</span>'
           : '<span class="badge warning">N\u00e3o bateu ponto</span>';
+        const statusTexto = item.ponto ? 'OK' : 'Nao bateu ponto';
+        const entrada = item.ponto?.entrada || '--:--';
+        const saida = item.ponto?.saida || '--:--';
+        const horasTexto = minutesToHHMM(horas);
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${item.funcionario.nome}</td>
-          <td>${item.ponto?.entrada || '--:--'}</td>
-          <td>${item.ponto?.saida || '--:--'}</td>
-          <td>${minutesToHHMM(horas)}</td>
+          <td>${entrada}</td>
+          <td>${saida}</td>
+          <td>${horasTexto}</td>
           <td>${status}</td>
         `;
         tbody.appendChild(tr);
+        linhasRelatorioDiario.push([
+          rData.value,
+          item.funcionario.nome,
+          entrada,
+          saida,
+          horasTexto,
+          statusTexto
+        ]);
       }
     }
 
@@ -413,20 +433,58 @@
 
       const tbody = document.getElementById('tbodyMes');
       tbody.innerHTML = '';
+      linhasRelatorioMensal = [];
 
       agrupado.forEach((value) => {
         const total = calcularSaldoMes(value.lista);
         const saldoTotalClass = saldoClass(total.saldoAcumulado);
+        const funcionarioNome = value.funcionario?.nome || '-';
+        const horasTexto = minutesToHHMM(total.totalMinutosTrabalhados);
+        const metaTexto = minutesToHHMM(total.totalMetaMinutos);
+        const saldoTexto = minutesToHHMM(total.saldoAcumulado);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${value.funcionario?.nome || '-'}</td>
-          <td>${minutesToHHMM(total.totalMinutosTrabalhados)}</td>
-          <td>${minutesToHHMM(total.totalMetaMinutos)}</td>
-          <td class="${saldoTotalClass}">${minutesToHHMM(total.saldoAcumulado)}</td>
+          <td>${funcionarioNome}</td>
+          <td>${horasTexto}</td>
+          <td>${metaTexto}</td>
+          <td class="${saldoTotalClass}">${saldoTexto}</td>
         `;
         tbody.appendChild(tr);
+        linhasRelatorioMensal.push([
+          rMes.value,
+          funcionarioNome,
+          horasTexto,
+          metaTexto,
+          saldoTexto
+        ]);
       });
     }
+
+    btnExportarRelatorioDia.addEventListener('click', () => {
+      if (!linhasRelatorioDiario.length) {
+        showMsg('Nao ha dados no relatorio diario para exportar.', 'error');
+        return;
+      }
+
+      exportarCsv({
+        fileName: `relatorio-diario-${rData.value}.csv`,
+        headers: ['Data', 'Funcionario', 'Entrada', 'Saida', 'Horas trabalhadas', 'Status'],
+        rows: linhasRelatorioDiario
+      });
+    });
+
+    btnExportarRelatorioMes.addEventListener('click', () => {
+      if (!linhasRelatorioMensal.length) {
+        showMsg('Nao ha dados no relatorio mensal para exportar.', 'error');
+        return;
+      }
+
+      exportarCsv({
+        fileName: `relatorio-mensal-${rMes.value}.csv`,
+        headers: ['Mes', 'Funcionario', 'Horas trabalhadas', 'Meta mensal', 'Saldo total'],
+        rows: linhasRelatorioMensal
+      });
+    });
 
     rData.addEventListener('change', carregarRelatorioDiario);
     rFuncDia.addEventListener('change', carregarRelatorioDiario);
