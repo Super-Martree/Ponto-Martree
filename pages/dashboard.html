@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Martree</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-kicker">Martree</div>
+        <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+        <div class="brand-meta">
+          <div class="brand">Controle de Ponto</div>
+          <div class="brand-subtitle">Painel operacional para registro de jornada e acompanhamento de desempenho.</div>
+        </div>
+      </div>
+
+      <button id="mobileMenuBtn" class="menu-toggle" type="button" aria-expanded="false" aria-label="Abrir menu">Menu</button>
+
+      <div class="stack">
+        <p class="sidebar-section-title">Navega&ccedil;&atilde;o</p>
+        <nav class="sidebar-nav">
+          <a href="./dashboard.html" class="active">Dashboard</a>
+          <a href="./meu-mes.html">Meu M&ecirc;s</a>
+          <a id="navAdminLink" href="./admin.html" class="hide">Admin</a>
+          <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
+        </nav>
+      </div>
+
+      <div class="sidebar-footer">
+        Vis&atilde;o di&aacute;ria, metas semanais e indicadores de saldo em uma &uacute;nica estrutura.
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="container page-shell">
+        <section class="page-hero">
+          <div class="page-hero-content">
+            <div class="page-eyebrow">Dashboard</div>
+            <h1>Bater ponto com contexto operacional claro.</h1>
+            <p id="bemVindo" class="page-subtitle"></p>
+          </div>
+          <div class="page-hero-aside">
+            <div class="company-tag">Martree</div>
+            <p class="small">A&ccedil;&otilde;es essenciais, resumo do dia e painel de desempenho integrados na mesma experi&ecirc;ncia.</p>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>A&ccedil;&otilde;es do dia</h2>
+              <p class="small">Registre entrada, intervalo e sa&iacute;da sem sair da tela principal.</p>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="btnEntrada">Registrar Entrada</button>
+            <button id="btnIniciarIntervalo" class="secondary">Iniciar Intervalo</button>
+            <button id="btnFinalizarIntervalo" class="secondary">Finalizar Intervalo</button>
+            <button id="btnSaida">Registrar Sa&iacute;da</button>
+          </div>
+
+          <div id="msg"></div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Resumo do dia</h2>
+              <p class="small">Leitura r&aacute;pida dos principais marcos da sua jornada atual.</p>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi"><div class="label">Entrada</div><div id="kpiEntrada" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Sa&iacute;da</div><div id="kpiSaida" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Horas trabalhadas</div><div id="kpiHoras" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Meta di&aacute;ria</div><div id="kpiMeta" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Saldo do dia</div><div id="kpiSaldo" class="value">--:--</div></div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Entrada</th>
+                  <th>In&iacute;cio intervalo</th>
+                  <th>Fim intervalo</th>
+                  <th>Sa&iacute;da</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="tdData"></td>
+                  <td id="tdEntrada"></td>
+                  <td id="tdInicio"></td>
+                  <td id="tdFim"></td>
+                  <td id="tdSaida"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Painel de desempenho</h2>
+              <p class="small">Acompanhe horas, meta e saldo semanal com visual anal&iacute;tico mais limpo.</p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col col-3">
+              <label for="filtroSemana">Semana desejada</label>
+              <input id="filtroSemana" type="week" />
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi"><div class="label">Horas da semana</div><div id="kpi30Horas" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Meta da semana</div><div id="kpi30Meta" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Saldo da semana</div><div id="kpi30Saldo" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Dias com ponto</div><div id="kpi30Dias" class="value">--</div></div>
+          </div>
+
+          <div class="panel-grid">
+            <div class="stack">
+              <div class="section-head">
+                <div>
+                  <h3>Saldo di&aacute;rio da semana</h3>
+                  <p class="small">Comparativo visual por dia para leitura r&aacute;pida do saldo.</p>
+                </div>
+              </div>
+              <div id="chartSaldo7" class="mini-chart"></div>
+            </div>
+
+            <div class="stack">
+              <div class="section-head">
+                <div>
+                  <h3>Horas x meta por dia</h3>
+                  <p class="small">Rela&ccedil;&atilde;o entre horas registradas e meta di&aacute;ria da semana selecionada.</p>
+                </div>
+              </div>
+              <div id="chartHorasMeta" class="mini-chart-duo"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { requireAuth, getFuncionarioLogado, logout } from '../js/auth.js';
+    import { buscarPontoDoDia, registrarEntrada, iniciarIntervalo, finalizarIntervalo, registrarSaida, estadoBotoes, dataHojeBrasilia } from '../js/ponto.js';
+    import { getMetaDiaria, getInicioSemanaISO, calcularHorasTrabalhadas, calcularSaldoDia, minutesToHHMM } from '../js/horas.js';
+    import { supabase } from '../js/supabaseClient.js';
+    import { initMobileMenu } from '../js/mobileMenu.js';
+
+    const ids = {
+      msg: document.getElementById('msg'),
+      bemVindo: document.getElementById('bemVindo'),
+      btnEntrada: document.getElementById('btnEntrada'),
+      btnIniciarIntervalo: document.getElementById('btnIniciarIntervalo'),
+      btnFinalizarIntervalo: document.getElementById('btnFinalizarIntervalo'),
+      btnSaida: document.getElementById('btnSaida'),
+      tdData: document.getElementById('tdData'),
+      tdEntrada: document.getElementById('tdEntrada'),
+      tdInicio: document.getElementById('tdInicio'),
+      tdFim: document.getElementById('tdFim'),
+      tdSaida: document.getElementById('tdSaida'),
+      kpiEntrada: document.getElementById('kpiEntrada'),
+      kpiSaida: document.getElementById('kpiSaida'),
+      kpiHoras: document.getElementById('kpiHoras'),
+      kpiMeta: document.getElementById('kpiMeta'),
+      kpiSaldo: document.getElementById('kpiSaldo'),
+      kpi30Horas: document.getElementById('kpi30Horas'),
+      kpi30Meta: document.getElementById('kpi30Meta'),
+      kpi30Saldo: document.getElementById('kpi30Saldo'),
+      kpi30Dias: document.getElementById('kpi30Dias'),
+      chartSaldo7: document.getElementById('chartSaldo7'),
+      chartHorasMeta: document.getElementById('chartHorasMeta'),
+      filtroSemana: document.getElementById('filtroSemana')
+    };
+    const navAdminLink = document.getElementById('navAdminLink');
+
+    initMobileMenu();
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    let funcionario;
+    let ponto;
+    let escalaSabadoMap = new Map();
+    let hoje = '';
+
+    function normalizarDataISO(value) {
+      return String(value || '').slice(0, 10);
+    }
+
+    function addDaysISO(dateISO, days) {
+      const d = new Date(`${dateISO}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function getISOWeekValue(dateISO) {
+      const d = new Date(`${dateISO}T00:00:00Z`);
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    }
+
+    function getWeekStartFromInput(weekValue) {
+      if (!weekValue || !weekValue.includes('-W')) return getInicioSemanaISO(hoje);
+      const [yearStr, weekStr] = weekValue.split('-W');
+      const year = Number(yearStr);
+      const week = Number(weekStr);
+      const jan4 = new Date(Date.UTC(year, 0, 4));
+      const jan4Day = jan4.getUTCDay() || 7;
+      const mondayWeek1 = new Date(jan4);
+      mondayWeek1.setUTCDate(jan4.getUTCDate() - jan4Day + 1);
+      mondayWeek1.setUTCDate(mondayWeek1.getUTCDate() + (week - 1) * 7);
+      return mondayWeek1.toISOString().slice(0, 10);
+    }
+
+    function showMsg(text, tipo = 'ok') {
+      ids.msg.innerHTML = `<div class="msg ${tipo}">${text}</div>`;
+    }
+
+    function aplicarCorSaldo(element, valorMinutos) {
+      element.classList.remove('saldo-positivo', 'saldo-negativo');
+      if (valorMinutos > 0) element.classList.add('saldo-positivo');
+      if (valorMinutos < 0) element.classList.add('saldo-negativo');
+    }
+
+    function renderGraficoSaldo7(listaDias) {
+      ids.chartSaldo7.innerHTML = '';
+      const maxAbs = Math.max(1, ...listaDias.map((d) => Math.abs(d.saldo)));
+      ids.chartSaldo7.style.gridTemplateColumns = `repeat(${Math.max(2, listaDias.length)}, minmax(70px, 1fr))`;
+
+      for (const dia of listaDias) {
+        const altura = Math.max(6, Math.round((Math.abs(dia.saldo) / maxAbs) * 72));
+        const classe = dia.saldo > 0 ? 'saldo-positivo' : dia.saldo < 0 ? 'saldo-negativo' : '';
+        const item = document.createElement('div');
+        item.className = 'mini-bar-wrap';
+        item.innerHTML = `
+          <div class="mini-bar ${classe}" style="height:${altura}px;"></div>
+          <div class="mini-bar-day">${dia.label || `${dia.data.slice(8, 10)}/${dia.data.slice(5, 7)}`}</div>
+          <div class="mini-bar-val ${classe}">${minutesToHHMM(dia.saldo)}</div>
+        `;
+        ids.chartSaldo7.appendChild(item);
+      }
+    }
+
+    function renderGraficoHorasMeta(listaDias) {
+      ids.chartHorasMeta.innerHTML = '';
+      ids.chartHorasMeta.style.gridTemplateColumns = `repeat(${Math.max(2, listaDias.length)}, minmax(90px, 1fr))`;
+      const maxAbs = Math.max(
+        1,
+        ...listaDias.map((d) => d.horas),
+        ...listaDias.map((d) => d.meta)
+      );
+
+      for (const dia of listaDias) {
+        const alturaHoras = Math.max(6, Math.round((dia.horas / maxAbs) * 72));
+        const alturaMeta = Math.max(6, Math.round((dia.meta / maxAbs) * 72));
+        const item = document.createElement('div');
+        item.className = 'mini-duo-wrap';
+        item.innerHTML = `
+          <div class="mini-duo-bars">
+            <div class="mini-duo-bar horas" style="height:${alturaHoras}px;"></div>
+            <div class="mini-duo-bar meta" style="height:${alturaMeta}px;"></div>
+          </div>
+          <div class="mini-bar-day">${dia.label || `${dia.data.slice(8, 10)}/${dia.data.slice(5, 7)}`}</div>
+          <div class="mini-bar-val">H ${minutesToHHMM(dia.horas)} | M ${minutesToHHMM(dia.meta)}</div>
+        `;
+        ids.chartHorasMeta.appendChild(item);
+      }
+    }
+
+    function isDomingo(dateISO) {
+      return new Date(`${dateISO}T00:00:00Z`).getUTCDay() === 0;
+    }
+
+    async function carregarPainelDesempenho() {
+      const inicio = getWeekStartFromInput(ids.filtroSemana.value);
+      const fim = addDaysISO(inicio, 7);
+      const dias = 7;
+      const inicioEscala = addDaysISO(inicio, -6);
+
+      const { data: escalas, error: escalasError } = await supabase
+        .from('escala_sabado_semanal')
+        .select('funcionario_id, semana_inicio, trabalha_sabado')
+        .eq('funcionario_id', funcionario.id)
+        .gte('semana_inicio', inicioEscala)
+        .lt('semana_inicio', fim);
+      if (escalasError) throw escalasError;
+
+      const escalaSabadoMap = new Map(
+        (escalas || []).map((e) => {
+          const semanaNormalizada = getInicioSemanaISO(normalizarDataISO(e.semana_inicio));
+          return [`${e.funcionario_id}|${semanaNormalizada}`, Boolean(e.trabalha_sabado)];
+        })
+      );
+
+      const { data: pontos, error: pontosError } = await supabase
+        .from('pontos')
+        .select('*')
+        .eq('funcionario_id', funcionario.id)
+        .gte('data', inicio)
+        .lt('data', fim)
+        .order('data', { ascending: true });
+      if (pontosError) throw pontosError;
+
+      const mapaPontos = new Map((pontos || []).map((p) => [p.data, p]));
+      let totalHoras = 0;
+      let totalMeta = 0;
+      let diasComPonto = 0;
+      const serieSaldo = [];
+      const serieHorasMeta = [];
+
+      for (let i = 0; i < dias; i++) {
+        const dataDia = addDaysISO(inicio, i);
+        const ponto = mapaPontos.get(dataDia) || null;
+        const horas = calcularHorasTrabalhadas(ponto);
+        const meta = getMetaDiaria(funcionario, dataDia, { escalaSabadoMap });
+        const horasValor = horas !== null ? horas : 0;
+        const saldo = horas !== null ? calcularSaldoDia(meta, horas) || 0 : -meta;
+
+        if (horas !== null) {
+          totalHoras += horas;
+          totalMeta += meta;
+          diasComPonto += 1;
+        }
+
+        if (!isDomingo(dataDia)) {
+          serieSaldo.push({ data: dataDia, saldo });
+          serieHorasMeta.push({ data: dataDia, horas: horasValor, meta });
+        }
+      }
+
+      const saldoTotal = totalHoras - totalMeta;
+      ids.kpi30Horas.textContent = minutesToHHMM(totalHoras);
+      ids.kpi30Meta.textContent = minutesToHHMM(totalMeta);
+      ids.kpi30Saldo.textContent = minutesToHHMM(saldoTotal);
+      ids.kpi30Dias.textContent = String(diasComPonto);
+      aplicarCorSaldo(ids.kpi30Saldo, saldoTotal);
+      renderGraficoSaldo7(serieSaldo);
+      renderGraficoHorasMeta(serieHorasMeta);
+    }
+
+    function preencherTela() {
+      const estado = estadoBotoes(ponto);
+
+      ids.btnEntrada.disabled = !estado.podeRegistrarEntrada;
+      ids.btnIniciarIntervalo.disabled = !estado.podeIniciarIntervalo;
+      ids.btnFinalizarIntervalo.disabled = !estado.podeFinalizarIntervalo;
+      ids.btnSaida.disabled = !estado.podeRegistrarSaida;
+
+      ids.tdData.textContent = hoje;
+      ids.tdEntrada.textContent = ponto?.entrada || '--:--';
+      ids.tdInicio.textContent = ponto?.inicio_intervalo || '--:--';
+      ids.tdFim.textContent = ponto?.fim_intervalo || '--:--';
+      ids.tdSaida.textContent = ponto?.saida || '--:--';
+
+      const meta = getMetaDiaria(funcionario, hoje, { escalaSabadoMap });
+      const horas = calcularHorasTrabalhadas(ponto);
+      const saldo = calcularSaldoDia(meta, horas);
+
+      ids.kpiEntrada.textContent = ponto?.entrada || '--:--';
+      ids.kpiSaida.textContent = ponto?.saida || '--:--';
+      ids.kpiHoras.textContent = minutesToHHMM(horas);
+      ids.kpiMeta.textContent = minutesToHHMM(meta);
+      ids.kpiSaldo.textContent = minutesToHHMM(saldo);
+      aplicarCorSaldo(ids.kpiSaldo, saldo ?? 0);
+    }
+
+    async function carregar() {
+      const user = await requireAuth();
+      if (!user) return;
+      hoje = await dataHojeBrasilia();
+      funcionario = await getFuncionarioLogado();
+      if (!funcionario) {
+        showMsg('Seu usu\u00e1rio n\u00e3o possui v\u00ednculo na tabela funcionarios. Solicite cadastro no banco ao administrador.', 'error');
+        return;
+      }
+      if (funcionario.admin) navAdminLink.classList.remove('hide');
+      ids.filtroSemana.value = getISOWeekValue(hoje);
+
+      ids.bemVindo.textContent = `Funcion\u00e1rio: ${funcionario.nome} | Cargo: ${funcionario.cargo}`;
+      const semanaInicio = getInicioSemanaISO(hoje);
+      const semanaFimDate = new Date(`${semanaInicio}T00:00:00Z`);
+      semanaFimDate.setUTCDate(semanaFimDate.getUTCDate() + 7);
+      const semanaFim = semanaFimDate.toISOString().slice(0, 10);
+
+      const { data: escalasSemana, error: escalaError } = await supabase
+        .from('escala_sabado_semanal')
+        .select('funcionario_id, semana_inicio, trabalha_sabado')
+        .eq('funcionario_id', funcionario.id)
+        .gte('semana_inicio', semanaInicio)
+        .lt('semana_inicio', semanaFim);
+      if (escalaError) throw escalaError;
+
+      escalaSabadoMap = new Map();
+      for (const escalaSemana of (escalasSemana || [])) {
+        const semanaNormalizada = getInicioSemanaISO(normalizarDataISO(escalaSemana.semana_inicio));
+        escalaSabadoMap.set(
+          `${escalaSemana.funcionario_id}|${semanaNormalizada}`,
+          Boolean(escalaSemana.trabalha_sabado)
+        );
+      }
+
+      ponto = await buscarPontoDoDia(funcionario.id, hoje);
+      preencherTela();
+      await carregarPainelDesempenho();
+    }
+
+    ids.btnEntrada.addEventListener('click', async () => {
+      try {
+        ponto = await registrarEntrada(funcionario.id, hoje);
+        preencherTela();
+        await carregarPainelDesempenho();
+        showMsg('Entrada registrada com sucesso.');
+      } catch (error) {
+        const texto = error.code === '23505'
+          ? 'Voc\u00ea j\u00e1 possui registro de ponto para hoje.'
+          : error.message;
+        showMsg(texto, 'error');
+      }
+    });
+
+    ids.btnIniciarIntervalo.addEventListener('click', async () => {
+      try {
+        ponto = await iniciarIntervalo(ponto.id);
+        preencherTela();
+        await carregarPainelDesempenho();
+        showMsg('In\u00edcio de intervalo registrado.');
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    });
+
+    ids.btnFinalizarIntervalo.addEventListener('click', async () => {
+      try {
+        ponto = await finalizarIntervalo(ponto.id);
+        preencherTela();
+        await carregarPainelDesempenho();
+        showMsg('Fim de intervalo registrado.');
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    });
+
+    ids.btnSaida.addEventListener('click', async () => {
+      try {
+        ponto = await registrarSaida(ponto.id);
+        preencherTela();
+        await carregarPainelDesempenho();
+        showMsg('Sa\u00edda registrada com sucesso.');
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    });
+
+    ids.filtroSemana.addEventListener('change', carregarPainelDesempenho);
+
+    carregar();
+  </script>
+</body>
+</html>

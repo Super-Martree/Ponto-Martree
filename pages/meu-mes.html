@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meu M&ecirc;s - Martree</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-kicker">Martree</div>
+        <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+        <div class="brand-meta">
+          <div class="brand">Controle de Ponto</div>
+          <div class="brand-subtitle">Vis&atilde;o mensal do colaborador com indicadores consolidados e hist&oacute;rico de jornada.</div>
+        </div>
+      </div>
+
+      <button id="mobileMenuBtn" class="menu-toggle" type="button" aria-expanded="false" aria-label="Abrir menu">Menu</button>
+
+      <div class="stack">
+        <p class="sidebar-section-title">Navega&ccedil;&atilde;o</p>
+        <nav class="sidebar-nav">
+          <a href="./dashboard.html">Dashboard</a>
+          <a href="./meu-mes.html" class="active">Meu M&ecirc;s</a>
+          <a id="navAdminLink" href="./admin.html" class="hide">Admin</a>
+          <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
+        </nav>
+      </div>
+
+      <div class="sidebar-footer">
+        Hist&oacute;rico organizado para leitura r&aacute;pida, confer&ecirc;ncia de saldo e acompanhamento do m&ecirc;s.
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="container page-shell">
+        <section class="page-hero">
+          <div class="page-hero-content">
+            <div class="page-eyebrow">Meu M&ecirc;s</div>
+            <h1>Resumo mensal com foco em clareza, leitura e acompanhamento de saldo.</h1>
+            <p class="page-subtitle">Consulte o total trabalhado, saldos e todos os registros do per&iacute;odo em uma interface mais limpa e consistente.</p>
+          </div>
+          <div class="page-hero-aside">
+            <div class="company-tag">Martree</div>
+            <p class="small">Os dados continuam vindo do mesmo fluxo atual, sem altera&ccedil;&atilde;o de regras de neg&oacute;cio.</p>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Filtro do per&iacute;odo</h2>
+              <p class="small">Selecione o m&ecirc;s para atualizar os indicadores e a tabela de registros.</p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col col-3">
+              <label for="mes">M&ecirc;s</label>
+              <input id="mes" type="month" />
+            </div>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Indicadores mensais</h2>
+              <p class="small">Panorama geral do per&iacute;odo, com destaque para saldos positivos, negativos e acumulado.</p>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi"><div class="label">Total trabalhado</div><div id="kpiTotal" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Saldo positivo</div><div id="kpiPos" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Saldo negativo</div><div id="kpiNeg" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Saldo acumulado</div><div id="kpiSaldo" class="value">--:--</div></div>
+            <div class="kpi"><div class="label">Saldo acumulado geral</div><div id="kpiSaldoGeral" class="value">--:--</div></div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Entrada</th>
+                  <th>In&iacute;cio intervalo</th>
+                  <th>Fim intervalo</th>
+                  <th>Sa&iacute;da</th>
+                  <th>Horas trabalhadas</th>
+                  <th>Meta do dia</th>
+                  <th>Saldo do dia</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyPontos"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { requireAuth, getFuncionarioLogado, logout } from '../js/auth.js';
+    import { supabase } from '../js/supabaseClient.js';
+    import { calcularHorasTrabalhadas, calcularSaldoDia, calcularSaldoMes, getInicioSemanaISO, getMetaDiaria, minutesToHHMM } from '../js/horas.js';
+    import { initMobileMenu } from '../js/mobileMenu.js';
+
+    const mesInput = document.getElementById('mes');
+    const tbody = document.getElementById('tbodyPontos');
+    const navAdminLink = document.getElementById('navAdminLink');
+
+    initMobileMenu();
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    const today = new Date();
+    mesInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    let funcionario;
+
+    function normalizarDataISO(value) {
+      return String(value || '').slice(0, 10);
+    }
+
+    function saldoClass(valorMinutos) {
+      if (valorMinutos > 0) return 'saldo-positivo';
+      if (valorMinutos < 0) return 'saldo-negativo';
+      return '';
+    }
+
+    function aplicarCorSaldo(element, valorMinutos) {
+      element.classList.remove('saldo-positivo', 'saldo-negativo');
+      const cls = saldoClass(valorMinutos);
+      if (cls) element.classList.add(cls);
+    }
+
+    async function carregarSaldoAcumuladoGeral() {
+      const { data: escalas, error: escalasError } = await supabase
+        .from('escala_sabado_semanal')
+        .select('funcionario_id, semana_inicio, trabalha_sabado')
+        .eq('funcionario_id', funcionario.id);
+
+      if (escalasError) throw escalasError;
+
+      const escalaSabadoMap = new Map(
+        (escalas || []).map((e) => {
+          const semanaNormalizada = getInicioSemanaISO(normalizarDataISO(e.semana_inicio));
+          return [`${e.funcionario_id}|${semanaNormalizada}`, Boolean(e.trabalha_sabado)];
+        })
+      );
+
+      const { data: todosPontos, error: todosPontosError } = await supabase
+        .from('pontos')
+        .select('*')
+        .eq('funcionario_id', funcionario.id)
+        .order('data', { ascending: true });
+
+      if (todosPontosError) throw todosPontosError;
+
+      const linhas = (todosPontos || []).map((ponto) => {
+        const horas = calcularHorasTrabalhadas(ponto);
+        const meta = getMetaDiaria(funcionario, ponto.data, { escalaSabadoMap });
+        const saldo = calcularSaldoDia(meta, horas);
+        return {
+          ...ponto,
+          horasTrabalhadasMinutos: horas,
+          metaMinutos: meta,
+          saldoMinutos: saldo,
+          funcionario
+        };
+      });
+
+      const totalGeral = calcularSaldoMes(linhas);
+      document.getElementById('kpiSaldoGeral').textContent = minutesToHHMM(totalGeral.saldoAcumulado);
+      aplicarCorSaldo(document.getElementById('kpiSaldoGeral'), totalGeral.saldoAcumulado);
+    }
+
+    async function carregarPontos() {
+      const mes = mesInput.value;
+      const inicio = `${mes}-01`;
+      const [ano, mesNumero] = mes.split('-').map(Number);
+      const proximoMes = new Date(ano, mesNumero, 1);
+      const fim = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, '0')}-01`;
+      const inicioEscalaDate = new Date(`${inicio}T00:00:00Z`);
+      inicioEscalaDate.setUTCDate(inicioEscalaDate.getUTCDate() - 6);
+      const inicioEscala = inicioEscalaDate.toISOString().slice(0, 10);
+
+      const { data: escalas, error: escalasError } = await supabase
+        .from('escala_sabado_semanal')
+        .select('funcionario_id, semana_inicio, trabalha_sabado')
+        .eq('funcionario_id', funcionario.id)
+        .gte('semana_inicio', inicioEscala)
+        .lt('semana_inicio', fim);
+
+      if (escalasError) throw escalasError;
+
+      const escalaSabadoMap = new Map(
+        (escalas || []).map((e) => {
+          const semanaNormalizada = getInicioSemanaISO(normalizarDataISO(e.semana_inicio));
+          return [`${e.funcionario_id}|${semanaNormalizada}`, Boolean(e.trabalha_sabado)];
+        })
+      );
+
+      const { data, error } = await supabase
+        .from('pontos')
+        .select('*')
+        .eq('funcionario_id', funcionario.id)
+        .gte('data', inicio)
+        .lt('data', fim)
+        .order('data', { ascending: true });
+
+      if (error) throw error;
+
+      tbody.innerHTML = '';
+
+      const linhas = data.map((ponto) => {
+        const horas = calcularHorasTrabalhadas(ponto);
+        const meta = getMetaDiaria(funcionario, ponto.data, { escalaSabadoMap });
+        const saldo = calcularSaldoDia(meta, horas);
+        return {
+          ...ponto,
+          horasTrabalhadasMinutos: horas,
+          metaMinutos: meta,
+          saldoMinutos: saldo,
+          funcionario
+        };
+      });
+
+      for (const item of linhas) {
+        const tr = document.createElement('tr');
+        const saldoDiaClass = saldoClass(item.saldoMinutos ?? 0);
+        tr.innerHTML = `
+          <td>${item.data}</td>
+          <td>${item.entrada || '--:--'}</td>
+          <td>${item.inicio_intervalo || '--:--'}</td>
+          <td>${item.fim_intervalo || '--:--'}</td>
+          <td>${item.saida || '--:--'}</td>
+          <td>${minutesToHHMM(item.horasTrabalhadasMinutos)}</td>
+          <td>${minutesToHHMM(item.metaMinutos)}</td>
+          <td class="${saldoDiaClass}">${minutesToHHMM(item.saldoMinutos)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      const total = calcularSaldoMes(linhas);
+      document.getElementById('kpiTotal').textContent = minutesToHHMM(total.totalMinutosTrabalhados);
+      document.getElementById('kpiPos').textContent = minutesToHHMM(total.saldoPositivo);
+      document.getElementById('kpiNeg').textContent = minutesToHHMM(total.saldoNegativo);
+      document.getElementById('kpiSaldo').textContent = minutesToHHMM(total.saldoAcumulado);
+      aplicarCorSaldo(document.getElementById('kpiPos'), total.saldoPositivo);
+      aplicarCorSaldo(document.getElementById('kpiNeg'), total.saldoNegativo);
+      aplicarCorSaldo(document.getElementById('kpiSaldo'), total.saldoAcumulado);
+      await carregarSaldoAcumuladoGeral();
+    }
+
+    mesInput.addEventListener('change', carregarPontos);
+
+    (async () => {
+      const user = await requireAuth();
+      if (!user) return;
+      funcionario = await getFuncionarioLogado();
+      if (!funcionario) {
+        alert('Seu usu\u00e1rio n\u00e3o possui v\u00ednculo na tabela funcionarios. Solicite cadastro no banco ao administrador.');
+        window.location.href = './dashboard.html';
+        return;
+      }
+      if (funcionario.admin) navAdminLink.classList.remove('hide');
+      await carregarPontos();
+    })();
+  </script>
+</body>
+</html>

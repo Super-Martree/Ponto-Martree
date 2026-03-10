@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Martree</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-kicker">Martree</div>
+        <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+        <div class="brand-meta">
+          <div class="brand">Controle de Ponto</div>
+          <div class="brand-subtitle">Gest&atilde;o administrativa para equipes, escalas, ajustes manuais e relat&oacute;rios.</div>
+        </div>
+      </div>
+
+      <button id="mobileMenuBtn" class="menu-toggle" type="button" aria-expanded="false" aria-label="Abrir menu">Menu</button>
+
+      <div class="stack">
+        <p class="sidebar-section-title">Navega&ccedil;&atilde;o</p>
+        <nav class="sidebar-nav">
+          <a href="./dashboard.html">Dashboard</a>
+          <a href="./meu-mes.html">Meu M&ecirc;s</a>
+          <a href="./admin.html" class="active">Admin</a>
+          <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
+        </nav>
+      </div>
+
+      <div class="sidebar-footer">
+        Ambiente central para consulta operacional, cadastros de apoio e acompanhamento gerencial.
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="container page-shell">
+        <section class="page-hero">
+          <div class="page-hero-content">
+            <div class="page-eyebrow">Admin</div>
+            <h1>Painel administrativo com estrutura mais robusta e leg&iacute;vel.</h1>
+            <p class="page-subtitle">Gerencie funcion&aacute;rios, escalas, edi&ccedil;&atilde;o de ponto e relat&oacute;rios mensais em uma interface corporativa &uacute;nica.</p>
+          </div>
+          <div class="page-hero-aside">
+            <div class="company-tag">Martree</div>
+            <p class="small">As funcionalidades existentes foram mantidas. A altera&ccedil;&atilde;o aqui &eacute; exclusivamente visual e estrutural.</p>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Central de gest&atilde;o</h2>
+              <p class="small">Controles administrativos, filtros e tabelas com o mesmo padr&atilde;o visual do restante do sistema.</p>
+            </div>
+          </div>
+          <div id="msg"></div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Funcion&aacute;rios</h2>
+              <p class="small">Visualiza&ccedil;&atilde;o somente leitura do cadastro vinculado ao banco.</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Cargo</th>
+                  <th>Admin</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyFuncionarios"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Escala semanal de s&aacute;bado</h2>
+              <p class="small">Defina por semana se o funcion&aacute;rio trabalha no s&aacute;bado.</p>
+            </div>
+          </div>
+
+          <form id="escalaForm" class="stack">
+            <div class="row">
+              <div class="col col-4">
+                <label for="eFuncionario">Funcion&aacute;rio</label>
+                <select id="eFuncionario" required></select>
+              </div>
+              <div class="col col-4">
+                <label for="eDataSemana">Data da semana</label>
+                <input id="eDataSemana" type="date" required />
+              </div>
+              <div class="col col-4">
+                <label for="eTrabalhaSabado">Trabalha no s&aacute;bado?</label>
+                <select id="eTrabalhaSabado">
+                  <option value="true">Sim</option>
+                  <option value="false">N&atilde;o</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit">Salvar escala da semana</button>
+          </form>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Edi&ccedil;&atilde;o manual de ponto</h2>
+              <p class="small">Ajuste registros espec&iacute;ficos mantendo o padr&atilde;o visual e a consist&ecirc;ncia dos formul&aacute;rios.</p>
+            </div>
+          </div>
+
+          <form id="pontoForm" class="stack">
+            <div class="row">
+              <div class="col col-4">
+                <label for="pFuncionario">Funcion&aacute;rio</label>
+                <select id="pFuncionario" required></select>
+              </div>
+              <div class="col col-4">
+                <label for="pData">Data</label>
+                <input id="pData" type="date" required />
+              </div>
+              <div class="col col-4">
+                <label for="pEntrada">Entrada</label>
+                <input id="pEntrada" type="time" />
+              </div>
+              <div class="col col-4">
+                <label for="pInicio">In&iacute;cio do intervalo</label>
+                <input id="pInicio" type="time" />
+              </div>
+              <div class="col col-4">
+                <label for="pFim">Fim do intervalo</label>
+                <input id="pFim" type="time" />
+              </div>
+              <div class="col col-4">
+                <label for="pSaida">Sa&iacute;da</label>
+                <input id="pSaida" type="time" />
+              </div>
+            </div>
+            <button type="submit">Salvar ponto manual</button>
+          </form>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Relat&oacute;rio di&aacute;rio</h2>
+              <p class="small">Consulta do status de ponto por dia com filtros compactos e leitura clara.</p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col col-3">
+              <label for="rData">Data</label>
+              <input id="rData" type="date" />
+            </div>
+            <div class="col col-4">
+              <label for="rFuncDia">Funcion&aacute;rio</label>
+              <select id="rFuncDia"></select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Funcion&aacute;rio</th>
+                  <th>Entrada</th>
+                  <th>Sa&iacute;da</th>
+                  <th>Horas trabalhadas</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyDia"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Relat&oacute;rio mensal</h2>
+              <p class="small">Indicadores consolidados por funcion&aacute;rio para fechamento e acompanhamento gerencial.</p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col col-3">
+              <label for="rMes">M&ecirc;s</label>
+              <input id="rMes" type="month" />
+            </div>
+            <div class="col col-4">
+              <label for="rFuncMes">Funcion&aacute;rio</label>
+              <select id="rFuncMes"></select>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Funcion&aacute;rio</th>
+                  <th>Horas trabalhadas</th>
+                  <th>Meta mensal</th>
+                  <th>Saldo total</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyMes"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { requireAdmin, logout } from '../js/auth.js';
+    import { listarFuncionarios, salvarPontoManual, relatorioDiario, listarPontosPorMes, salvarEscalaSabadoSemanal, listarEscalaSabadoSemanal } from '../js/admin.js';
+    import { calcularHorasTrabalhadas, calcularSaldoMes, getMetaDiaria, getInicioSemanaISO, minutesToHHMM } from '../js/horas.js';
+    import { initMobileMenu } from '../js/mobileMenu.js';
+
+    const msg = document.getElementById('msg');
+    const tbodyFuncionarios = document.getElementById('tbodyFuncionarios');
+    const escalaForm = document.getElementById('escalaForm');
+    const pontoForm = document.getElementById('pontoForm');
+
+    const rData = document.getElementById('rData');
+    const rMes = document.getElementById('rMes');
+    const rFuncDia = document.getElementById('rFuncDia');
+    const rFuncMes = document.getElementById('rFuncMes');
+    initMobileMenu();
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    const today = new Date();
+    rData.value = today.toISOString().slice(0, 10);
+    rMes.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('pData').value = rData.value;
+    document.getElementById('eDataSemana').value = rData.value;
+
+    let funcionarios = [];
+
+    function showMsg(text, type = 'ok') {
+      msg.innerHTML = `<div class="msg ${type}">${text}</div>`;
+    }
+
+    function saldoClass(valorMinutos) {
+      if (valorMinutos > 0) return 'saldo-positivo';
+      if (valorMinutos < 0) return 'saldo-negativo';
+      return '';
+    }
+
+    function normalizarDataISO(value) {
+      return String(value || '').slice(0, 10);
+    }
+
+    function preencherSelectFuncionarios() {
+      const options = ['<option value="">Todos</option>']
+        .concat(funcionarios.map((f) => `<option value="${f.id}">${f.nome}</option>`))
+        .join('');
+
+      rFuncDia.innerHTML = options;
+      rFuncMes.innerHTML = options;
+      document.getElementById('pFuncionario').innerHTML = funcionarios
+        .map((f) => `<option value="${f.id}">${f.nome}</option>`)
+        .join('');
+      document.getElementById('eFuncionario').innerHTML = funcionarios
+        .map((f) => `<option value="${f.id}">${f.nome}</option>`)
+        .join('');
+    }
+
+    async function carregarFuncionarios() {
+      funcionarios = await listarFuncionarios();
+      preencherSelectFuncionarios();
+
+      tbodyFuncionarios.innerHTML = '';
+      for (const f of funcionarios) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${f.nome}</td>
+          <td>${f.email}</td>
+          <td>${f.cargo}</td>
+          <td><span class="badge ${f.admin ? 'success' : ''}">${f.admin ? 'Sim' : 'N\u00e3o'}</span></td>
+        `;
+        tbodyFuncionarios.appendChild(tr);
+      }
+    }
+
+    escalaForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const funcionarioId = document.getElementById('eFuncionario').value;
+      const dataSemana = document.getElementById('eDataSemana').value;
+      const semanaInicio = getInicioSemanaISO(dataSemana);
+      const trabalhaSabado = document.getElementById('eTrabalhaSabado').value === 'true';
+
+      try {
+        await salvarEscalaSabadoSemanal({ funcionarioId, semanaInicio, trabalhaSabado });
+        await carregarRelatorioMensal();
+        showMsg(`Escala semanal salva (${semanaInicio}) com sucesso.`);
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    });
+
+    pontoForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        funcionario_id: document.getElementById('pFuncionario').value,
+        data: document.getElementById('pData').value,
+        entrada: document.getElementById('pEntrada').value,
+        inicio_intervalo: document.getElementById('pInicio').value,
+        fim_intervalo: document.getElementById('pFim').value,
+        saida: document.getElementById('pSaida').value
+      };
+
+      try {
+        await salvarPontoManual(payload);
+        await carregarRelatorioDiario();
+        await carregarRelatorioMensal();
+        showMsg('Ponto manual salvo com sucesso.');
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    });
+
+    async function carregarRelatorioDiario() {
+      const registros = await relatorioDiario({
+        data: rData.value,
+        funcionarioId: rFuncDia.value || null
+      });
+
+      const tbody = document.getElementById('tbodyDia');
+      tbody.innerHTML = '';
+
+      for (const item of registros) {
+        const horas = item.ponto ? calcularHorasTrabalhadas(item.ponto) : null;
+        const status = item.ponto
+          ? '<span class="badge success">OK</span>'
+          : '<span class="badge warning">N\u00e3o bateu ponto</span>';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.funcionario.nome}</td>
+          <td>${item.ponto?.entrada || '--:--'}</td>
+          <td>${item.ponto?.saida || '--:--'}</td>
+          <td>${minutesToHHMM(horas)}</td>
+          <td>${status}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function carregarRelatorioMensal() {
+      const [ano, mes] = rMes.value.split('-').map(Number);
+      const inicioMes = `${rMes.value}-01`;
+      const proximoMes = new Date(ano, mes, 1);
+      const fimMes = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, '0')}-01`;
+      const inicioEscalaDate = new Date(`${inicioMes}T00:00:00Z`);
+      inicioEscalaDate.setUTCDate(inicioEscalaDate.getUTCDate() - 6);
+      const inicioEscala = inicioEscalaDate.toISOString().slice(0, 10);
+
+      const escalas = await listarEscalaSabadoSemanal({
+        inicio: inicioEscala,
+        fim: fimMes,
+        funcionarioId: rFuncMes.value || null
+      });
+      const escalaSabadoMap = new Map(
+        escalas.map((e) => {
+          const semanaNormalizada = getInicioSemanaISO(normalizarDataISO(e.semana_inicio));
+          return [`${e.funcionario_id}|${semanaNormalizada}`, Boolean(e.trabalha_sabado)];
+        })
+      );
+
+      const pontos = await listarPontosPorMes({
+        anoMes: rMes.value,
+        funcionarioId: rFuncMes.value || null
+      });
+
+      const agrupado = new Map();
+      for (const ponto of pontos) {
+        const key = ponto.funcionario_id;
+        const funcionario = ponto.funcionarios;
+        if (!agrupado.has(key)) {
+          agrupado.set(key, {
+            funcionario,
+            lista: []
+          });
+        }
+
+        const meta = getMetaDiaria({
+          id: funcionario?.id,
+          trabalha_sabado: funcionario?.trabalha_sabado
+        }, ponto.data, { escalaSabadoMap });
+        agrupado.get(key).lista.push({
+          ...ponto,
+          metaMinutos: meta,
+          funcionario: {
+            id: funcionario?.id,
+            trabalha_sabado: funcionario?.trabalha_sabado
+          }
+        });
+      }
+
+      const tbody = document.getElementById('tbodyMes');
+      tbody.innerHTML = '';
+
+      agrupado.forEach((value) => {
+        const total = calcularSaldoMes(value.lista);
+        const saldoTotalClass = saldoClass(total.saldoAcumulado);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${value.funcionario?.nome || '-'}</td>
+          <td>${minutesToHHMM(total.totalMinutosTrabalhados)}</td>
+          <td>${minutesToHHMM(total.totalMetaMinutos)}</td>
+          <td class="${saldoTotalClass}">${minutesToHHMM(total.saldoAcumulado)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    rData.addEventListener('change', carregarRelatorioDiario);
+    rFuncDia.addEventListener('change', carregarRelatorioDiario);
+    rMes.addEventListener('change', carregarRelatorioMensal);
+    rFuncMes.addEventListener('change', carregarRelatorioMensal);
+
+    (async () => {
+      try {
+        const ctx = await requireAdmin();
+        if (!ctx) return;
+        await carregarFuncionarios();
+        await carregarRelatorioDiario();
+        await carregarRelatorioMensal();
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    })();
+  </script>
+</body>
+</html>
