@@ -464,6 +464,45 @@ h3 {
   gap: 12px;
 }
 
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.month-nav-btn {
+  width: 56px;
+  min-width: 56px;
+  padding: 0;
+  font-size: 20px;
+}
+
+.month-nav-current {
+  min-width: 240px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+  display: grid;
+  gap: 4px;
+}
+
+.month-nav-label {
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.month-nav-current strong {
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  text-transform: capitalize;
+}
+
 label {
   display: block;
   margin-bottom: 8px;

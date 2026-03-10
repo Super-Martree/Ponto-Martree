@@ -53,16 +53,19 @@
           <div class="section-head">
             <div>
               <h2>Filtro do per&iacute;odo</h2>
-              <p class="small">Selecione o m&ecirc;s para atualizar os indicadores e a tabela de registros.</p>
+              <p class="small">A tela abre no m&ecirc;s atual e permite navegar pelos meses anteriores com um clique.</p>
             </div>
           </div>
 
-          <div class="row">
-            <div class="col col-3">
-              <label for="mes">M&ecirc;s</label>
-              <input id="mes" type="month" />
+          <div class="month-nav">
+            <button id="mesAnterior" type="button" class="secondary month-nav-btn" aria-label="Ver m&ecirc;s anterior">&larr;</button>
+            <div class="month-nav-current">
+              <span class="month-nav-label">M&ecirc;s em exibi&ccedil;&atilde;o</span>
+              <strong id="mesAtualLabel"></strong>
             </div>
+            <button id="mesProximo" type="button" class="secondary month-nav-btn" aria-label="Ver pr&oacute;ximo m&ecirc;s">&rarr;</button>
           </div>
+          <input id="mes" type="month" class="hide" />
         </section>
 
         <section class="card section-card">
@@ -113,6 +116,9 @@
     import { initMobileMenu } from '../js/mobileMenu.js';
 
     const mesInput = document.getElementById('mes');
+    const mesAtualLabel = document.getElementById('mesAtualLabel');
+    const btnMesAnterior = document.getElementById('mesAnterior');
+    const btnMesProximo = document.getElementById('mesProximo');
     const tbody = document.getElementById('tbodyPontos');
     const navAdminLink = document.getElementById('navAdminLink');
     const btnExportarMeuMes = document.getElementById('exportarMeuMes');
@@ -121,13 +127,39 @@
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
     const today = new Date();
-    mesInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const mesAtualSistema = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    mesInput.value = mesAtualSistema;
 
     let funcionario;
     let linhasExportacaoMes = [];
 
     function normalizarDataISO(value) {
       return String(value || '').slice(0, 10);
+    }
+
+    function formatarMesLabel(anoMes) {
+      const [ano, mes] = anoMes.split('-').map(Number);
+      const data = new Date(Date.UTC(ano, mes - 1, 1));
+      return new Intl.DateTimeFormat('pt-BR', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC'
+      }).format(data);
+    }
+
+    function atualizarNavegacaoMes() {
+      mesAtualLabel.textContent = formatarMesLabel(mesInput.value);
+      btnMesProximo.disabled = mesInput.value >= mesAtualSistema;
+    }
+
+    function alterarMes(offset) {
+      const [ano, mes] = mesInput.value.split('-').map(Number);
+      const data = new Date(Date.UTC(ano, mes - 1 + offset, 1));
+      const novoValor = `${data.getUTCFullYear()}-${String(data.getUTCMonth() + 1).padStart(2, '0')}`;
+      if (novoValor > mesAtualSistema) return;
+      mesInput.value = novoValor;
+      atualizarNavegacaoMes();
+      carregarPontos();
     }
 
     function saldoClass(valorMinutos) {
@@ -275,7 +307,12 @@
       await carregarSaldoAcumuladoGeral();
     }
 
-    mesInput.addEventListener('change', carregarPontos);
+    mesInput.addEventListener('change', () => {
+      atualizarNavegacaoMes();
+      carregarPontos();
+    });
+    btnMesAnterior.addEventListener('click', () => alterarMes(-1));
+    btnMesProximo.addEventListener('click', () => alterarMes(1));
 
     btnExportarMeuMes.addEventListener('click', () => {
       if (!linhasExportacaoMes.length) {
@@ -300,6 +337,7 @@
         return;
       }
       if (funcionario.admin) navAdminLink.classList.remove('hide');
+      atualizarNavegacaoMes();
       await carregarPontos();
     })();
   </script>
