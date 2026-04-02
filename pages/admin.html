@@ -227,7 +227,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
-    import { requireAdmin, logout } from '../js/auth.js';
+    import { requireAdmin, logout, ensureAdminNavigationIntent } from '../js/auth.js';
     import { listarFuncionarios, salvarPontoManual, relatorioDiario, listarPontosPorMes, salvarEscalaSabadoSemanal, listarEscalaSabadoSemanal } from '../js/admin.js';
     import { exportarCsv, exportarCsvComSecoes } from '../js/csvExport.js';
     import { calcularHorasTrabalhadas, calcularSaldoMes, getMetaDiaria, getInicioSemanaISO, minutesToHHMM } from '../js/horas.js';
@@ -525,6 +525,7 @@
 
     (async () => {
       try {
+        if (!ensureAdminNavigationIntent()) return;
         const ctx = await requireAdmin();
         if (!ctx) return;
         await carregarFuncionarios();

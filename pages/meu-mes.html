@@ -109,7 +109,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
-    import { requireAuth, getFuncionarioLogado, logout } from '../js/auth.js';
+    import { requireAuth, getFuncionarioLogado, logout, enableAdminNavigation } from '../js/auth.js';
     import { exportarCsv } from '../js/csvExport.js';
     import { supabase } from '../js/supabaseClient.js';
     import { calcularHorasTrabalhadas, calcularSaldoDia, calcularSaldoMes, getInicioSemanaISO, getMetaDiaria, minutesToHHMM } from '../js/horas.js';
@@ -124,6 +124,7 @@
     const btnExportarMeuMes = document.getElementById('exportarMeuMes');
 
     initMobileMenu();
+    enableAdminNavigation(navAdminLink);
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
     const today = new Date();

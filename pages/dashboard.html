@@ -149,7 +149,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
-    import { requireAuth, getFuncionarioLogado, logout } from '../js/auth.js';
+    import { requireAuth, getFuncionarioLogado, logout, enableAdminNavigation } from '../js/auth.js';
     import { buscarPontoDoDia, registrarEntrada, iniciarIntervalo, finalizarIntervalo, registrarSaida, estadoBotoes, dataHojeBrasilia } from '../js/ponto.js';
     import { getMetaDiaria, getInicioSemanaISO, calcularHorasTrabalhadas, calcularSaldoDia, minutesToHHMM } from '../js/horas.js';
     import { supabase } from '../js/supabaseClient.js';
@@ -183,6 +183,7 @@
     const navAdminLink = document.getElementById('navAdminLink');
 
     initMobileMenu();
+    enableAdminNavigation(navAdminLink);
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
     let funcionario;

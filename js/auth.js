@@ -1,4 +1,6 @@
-﻿import { supabase } from './supabaseClient.js';
+import { supabase } from './supabaseClient.js';
+
+const ADMIN_ACCESS_KEY = 'martree_admin_access';
 
 export async function login(email, senha) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
@@ -7,6 +9,7 @@ export async function login(email, senha) {
 }
 
 export async function logout() {
+  sessionStorage.removeItem(ADMIN_ACCESS_KEY);
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
   window.location.href = './login.html';
@@ -62,6 +65,19 @@ export async function requireAdmin() {
   }
 
   return { user, funcionario };
+}
+
+export function enableAdminNavigation(link) {
+  if (!link) return;
+  link.addEventListener('click', () => {
+    sessionStorage.setItem(ADMIN_ACCESS_KEY, '1');
+  });
+}
+
+export function ensureAdminNavigationIntent() {
+  if (sessionStorage.getItem(ADMIN_ACCESS_KEY) === '1') return true;
+  window.location.replace('./dashboard.html');
+  return false;
 }
 
 export function onAuthChange(callback) {
