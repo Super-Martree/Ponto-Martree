@@ -8,48 +8,6 @@
 </head>
 <body class="login-page">
   <div class="login-shell">
-    <section class="login-panel">
-      <div class="login-panel-content">
-        <div class="login-panel-top">
-          <div class="brand-kicker">Painel Corporativo</div>
-          <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
-          <h1>Controle de ponto com visual profissional e opera&ccedil;&atilde;o centralizada.</h1>
-          <p>
-            Acesse o painel para registrar jornada, acompanhar saldo de horas e consultar relat&oacute;rios em um ambiente
-            corporativo, responsivo e consistente.
-          </p>
-        </div>
-
-        <div class="feature-list">
-          <div class="feature-item">
-            <div class="feature-icon">01</div>
-            <div>
-              <strong>Registro r&aacute;pido</strong>
-              <span>Entrada, intervalo e sa&iacute;da organizados em poucos cliques.</span>
-            </div>
-          </div>
-          <div class="feature-item">
-            <div class="feature-icon">02</div>
-            <div>
-              <strong>Vis&atilde;o operacional</strong>
-              <span>Indicadores claros para leitura imediata em desktop e mobile.</span>
-            </div>
-          </div>
-          <div class="feature-item">
-            <div class="feature-icon">03</div>
-            <div>
-              <strong>Gest&atilde;o administrativa</strong>
-              <span>Relat&oacute;rios e ajustes manuais com padr&atilde;o visual unificado.</span>
-            </div>
-          </div>
-        </div>
-
-        <p class="login-panel-footer">
-          Martree • Sistema interno de controle de ponto
-        </p>
-      </div>
-    </section>
-
     <section class="login-card">
       <div class="login-brand-wrap">
         <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
@@ -105,7 +63,7 @@
         window.location.href = './dashboard.html';
       } catch (error) {
         const friendly = error?.status === 400
-          ? 'E-mail ou senha inv\u00e1lidos.'
+          ? 'E-mail ou senha invalidos.'
           : error.message;
         msg.innerHTML = `<div class="msg error">${friendly}</div>`;
       }
