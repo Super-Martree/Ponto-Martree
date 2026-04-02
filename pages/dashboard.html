@@ -25,7 +25,17 @@
         <nav class="sidebar-nav">
           <a href="./dashboard.html" class="active">Dashboard</a>
           <a href="./meu-mes.html">Meu M&ecirc;s</a>
-          <a id="navAdminLink" href="./admin.html" class="hide">Admin</a>
+          <div id="adminNavGroup" class="admin-nav-group hide">
+            <button id="navAdminToggle" class="submenu-toggle" type="button" aria-expanded="false">Admin</button>
+            <div class="sidebar-subnav">
+              <a href="./admin-horas-geral.html" class="subnav-link">Horas geral</a>
+              <a href="./admin-funcionarios.html" class="subnav-link">Funcionarios</a>
+              <a href="./admin-escala.html" class="subnav-link">Escala semanal</a>
+              <a href="./admin-editar-ponto.html" class="subnav-link">Editar ponto</a>
+              <a href="./admin-relatorio-diario.html" class="subnav-link">Relatorio diario</a>
+              <a href="./admin-relatorio-mensal.html" class="subnav-link">Relatorio mensal</a>
+            </div>
+          </div>
           <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
         </nav>
       </div>
@@ -149,7 +159,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
-    import { requireAuth, getFuncionarioLogado, logout, enableAdminNavigation } from '../js/auth.js';
+    import { requireAuth, getFuncionarioLogado, logout } from '../js/auth.js';
+    import { initAdminMenu } from '../js/adminNav.js';
     import { buscarPontoDoDia, registrarEntrada, iniciarIntervalo, finalizarIntervalo, registrarSaida, estadoBotoes, dataHojeBrasilia } from '../js/ponto.js';
     import { getMetaDiaria, getInicioSemanaISO, calcularHorasTrabalhadas, calcularSaldoDia, minutesToHHMM } from '../js/horas.js';
     import { supabase } from '../js/supabaseClient.js';
@@ -180,10 +191,9 @@
       chartHorasMeta: document.getElementById('chartHorasMeta'),
       filtroSemana: document.getElementById('filtroSemana')
     };
-    const navAdminLink = document.getElementById('navAdminLink');
+    const adminNavGroup = document.getElementById('adminNavGroup');
 
     initMobileMenu();
-    enableAdminNavigation(navAdminLink);
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
     let funcionario;
@@ -392,7 +402,11 @@
         showMsg('Seu usu\u00e1rio n\u00e3o possui v\u00ednculo na tabela funcionarios. Solicite cadastro no banco ao administrador.', 'error');
         return;
       }
-      if (funcionario.admin) navAdminLink.classList.remove('hide');
+      if (funcionario.admin) {
+        initAdminMenu({ groupSelector: '#adminNavGroup', open: false });
+      } else {
+        adminNavGroup.classList.add('hide');
+      }
       ids.filtroSemana.value = getISOWeekValue(hoje);
 
       ids.bemVindo.textContent = `Funcion\u00e1rio: ${funcionario.nome} | Cargo: ${funcionario.cargo}`;

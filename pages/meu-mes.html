@@ -25,7 +25,17 @@
         <nav class="sidebar-nav">
           <a href="./dashboard.html">Dashboard</a>
           <a href="./meu-mes.html" class="active">Meu M&ecirc;s</a>
-          <a id="navAdminLink" href="./admin.html" class="hide">Admin</a>
+          <div id="adminNavGroup" class="admin-nav-group hide">
+            <button id="navAdminToggle" class="submenu-toggle" type="button" aria-expanded="false">Admin</button>
+            <div class="sidebar-subnav">
+              <a href="./admin-horas-geral.html" class="subnav-link">Horas geral</a>
+              <a href="./admin-funcionarios.html" class="subnav-link">Funcionarios</a>
+              <a href="./admin-escala.html" class="subnav-link">Escala semanal</a>
+              <a href="./admin-editar-ponto.html" class="subnav-link">Editar ponto</a>
+              <a href="./admin-relatorio-diario.html" class="subnav-link">Relatorio diario</a>
+              <a href="./admin-relatorio-mensal.html" class="subnav-link">Relatorio mensal</a>
+            </div>
+          </div>
           <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
         </nav>
       </div>
@@ -109,7 +119,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
-    import { requireAuth, getFuncionarioLogado, logout, enableAdminNavigation } from '../js/auth.js';
+    import { requireAuth, getFuncionarioLogado, logout } from '../js/auth.js';
+    import { initAdminMenu } from '../js/adminNav.js';
     import { exportarCsv } from '../js/csvExport.js';
     import { supabase } from '../js/supabaseClient.js';
     import { calcularHorasTrabalhadas, calcularSaldoDia, calcularSaldoMes, getInicioSemanaISO, getMetaDiaria, minutesToHHMM } from '../js/horas.js';
@@ -120,11 +131,10 @@
     const btnMesAnterior = document.getElementById('mesAnterior');
     const btnMesProximo = document.getElementById('mesProximo');
     const tbody = document.getElementById('tbodyPontos');
-    const navAdminLink = document.getElementById('navAdminLink');
+    const adminNavGroup = document.getElementById('adminNavGroup');
     const btnExportarMeuMes = document.getElementById('exportarMeuMes');
 
     initMobileMenu();
-    enableAdminNavigation(navAdminLink);
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
     const today = new Date();
@@ -337,7 +347,11 @@
         window.location.href = './dashboard.html';
         return;
       }
-      if (funcionario.admin) navAdminLink.classList.remove('hide');
+      if (funcionario.admin) {
+        initAdminMenu({ groupSelector: '#adminNavGroup', open: false });
+      } else {
+        adminNavGroup.classList.add('hide');
+      }
       atualizarNavegacaoMes();
       await carregarPontos();
     })();

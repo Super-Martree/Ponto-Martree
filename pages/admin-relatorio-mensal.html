@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatorio Mensal - Admin - Martree</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-kicker">Martree</div>
+        <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+        <div class="brand-meta">
+          <div class="brand">Controle de Ponto</div>
+          <div class="brand-subtitle">Gestao administrativa para equipes, escalas, ajustes manuais e relatorios.</div>
+        </div>
+      </div>
+      <button id="mobileMenuBtn" class="menu-toggle" type="button" aria-expanded="false" aria-label="Abrir menu">Menu</button>
+      <div class="stack">
+        <p class="sidebar-section-title">Navegacao</p>
+        <nav class="sidebar-nav">
+          <a href="./dashboard.html">Dashboard</a>
+          <a href="./meu-mes.html">Meu Mes</a>
+          <div id="adminNavGroup" class="admin-nav-group is-open">
+            <button id="navAdminToggle" class="submenu-toggle active" type="button" aria-expanded="true">Admin</button>
+            <div class="sidebar-subnav">
+            <a href="./admin-horas-geral.html" class="subnav-link">Horas geral</a>
+            <a href="./admin-funcionarios.html" class="subnav-link">Funcionarios</a>
+            <a href="./admin-escala.html" class="subnav-link">Escala semanal</a>
+            <a href="./admin-editar-ponto.html" class="subnav-link">Editar ponto</a>
+            <a href="./admin-relatorio-diario.html" class="subnav-link">Relatorio diario</a>
+            <a href="./admin-relatorio-mensal.html" class="subnav-link active">Relatorio mensal</a>
+          </div>
+          </div>
+          <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
+        </nav>
+      </div>
+      <div class="sidebar-footer">Ambiente central para consulta operacional, cadastros de apoio e acompanhamento gerencial.</div>
+    </aside>
+
+    <main class="main-content">
+      <div class="container page-shell">
+        <div id="msg"></div>
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Relatorio mensal</h2>
+              <p class="small">Indicadores consolidados por funcionario para fechamento e acompanhamento gerencial.</p>
+            </div>
+            <button id="exportarRelatorioMes" type="button" class="secondary">Exportar CSV</button>
+          </div>
+          <div class="row">
+            <div class="col col-3">
+              <label for="rMes">Mes</label>
+              <input id="rMes" type="month" />
+            </div>
+            <div class="col col-4">
+              <label for="rFuncMes">Funcionario</label>
+              <select id="rFuncMes"></select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Funcionario</th>
+                  <th>Horas trabalhadas</th>
+                  <th>Meta mensal</th>
+                  <th>Saldo total</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyMes"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { requireAdmin, logout, ensureAdminNavigationIntent } from '../js/auth.js';
+    import { listarFuncionarios, listarPontosPorMes, listarEscalaSabadoSemanal } from '../js/admin.js';
+    import { exportarCsvComSecoes } from '../js/csvExport.js';
+    import { calcularHorasTrabalhadas, calcularSaldoMes, getMetaDiaria, getInicioSemanaISO, minutesToHHMM } from '../js/horas.js';
+    import { initMobileMenu } from '../js/mobileMenu.js';
+    import { initAdminMenu } from '../js/adminNav.js';
+
+    const msg = document.getElementById('msg');
+    const rMes = document.getElementById('rMes');
+    const rFuncMes = document.getElementById('rFuncMes');
+    const tbodyMes = document.getElementById('tbodyMes');
+    const btnExportarRelatorioMes = document.getElementById('exportarRelatorioMes');
+    let linhasRelatorioMensal = [];
+    let linhasRelatorioMensalDetalhado = [];
+
+    function showMsg(text, type = 'ok') {
+      msg.innerHTML = `<div class="msg ${type}">${text}</div>`;
+    }
+
+    function saldoClass(valorMinutos) {
+      if (valorMinutos > 0) return 'saldo-positivo';
+      if (valorMinutos < 0) return 'saldo-negativo';
+      return '';
+    }
+
+    function normalizarDataISO(value) {
+      return String(value || '').slice(0, 10);
+    }
+
+    async function carregarRelatorioMensal() {
+      const [ano, mes] = rMes.value.split('-').map(Number);
+      const inicioMes = `${rMes.value}-01`;
+      const proximoMes = new Date(ano, mes, 1);
+      const fimMes = `${proximoMes.getFullYear()}-${String(proximoMes.getMonth() + 1).padStart(2, '0')}-01`;
+      const inicioEscalaDate = new Date(`${inicioMes}T00:00:00Z`);
+      inicioEscalaDate.setUTCDate(inicioEscalaDate.getUTCDate() - 6);
+      const inicioEscala = inicioEscalaDate.toISOString().slice(0, 10);
+
+      const escalas = await listarEscalaSabadoSemanal({
+        inicio: inicioEscala,
+        fim: fimMes,
+        funcionarioId: rFuncMes.value || null
+      });
+      const escalaSabadoMap = new Map(
+        escalas.map((e) => {
+          const semanaNormalizada = getInicioSemanaISO(normalizarDataISO(e.semana_inicio));
+          return [`${e.funcionario_id}|${semanaNormalizada}`, Boolean(e.trabalha_sabado)];
+        })
+      );
+
+      const pontos = await listarPontosPorMes({
+        anoMes: rMes.value,
+        funcionarioId: rFuncMes.value || null
+      });
+
+      const agrupado = new Map();
+      for (const ponto of pontos) {
+        const key = ponto.funcionario_id;
+        const funcionario = ponto.funcionarios;
+        if (!agrupado.has(key)) agrupado.set(key, { funcionario, lista: [] });
+
+        const meta = getMetaDiaria({
+          id: funcionario?.id,
+          trabalha_sabado: funcionario?.trabalha_sabado
+        }, ponto.data, { escalaSabadoMap });
+
+        agrupado.get(key).lista.push({
+          ...ponto,
+          metaMinutos: meta,
+          funcionario: { id: funcionario?.id, trabalha_sabado: funcionario?.trabalha_sabado }
+        });
+      }
+
+      tbodyMes.innerHTML = '';
+      linhasRelatorioMensal = [];
+      linhasRelatorioMensalDetalhado = [];
+
+      agrupado.forEach((value) => {
+        const total = calcularSaldoMes(value.lista);
+        const funcionarioNome = value.funcionario?.nome || '-';
+        const horasTexto = minutesToHHMM(total.totalMinutosTrabalhados);
+        const metaTexto = minutesToHHMM(total.totalMetaMinutos);
+        const saldoTexto = minutesToHHMM(total.saldoAcumulado);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${funcionarioNome}</td>
+          <td>${horasTexto}</td>
+          <td>${metaTexto}</td>
+          <td class="${saldoClass(total.saldoAcumulado)}">${saldoTexto}</td>
+        `;
+        tbodyMes.appendChild(tr);
+        linhasRelatorioMensal.push([rMes.value, funcionarioNome, horasTexto, metaTexto, saldoTexto]);
+
+        value.lista.slice().sort((a, b) => String(a.data).localeCompare(String(b.data))).forEach((item) => {
+          const horasDia = item.horasTrabalhadasMinutos ?? calcularHorasTrabalhadas(item);
+          const saldoDia = item.saldoMinutos ?? (horasDia !== null ? calcularSaldoMes([item]).saldoAcumulado : null);
+          linhasRelatorioMensalDetalhado.push([
+            rMes.value,
+            funcionarioNome,
+            item.data,
+            item.entrada || '--:--',
+            item.inicio_intervalo || '--:--',
+            item.fim_intervalo || '--:--',
+            item.saida || '--:--',
+            minutesToHHMM(horasDia),
+            minutesToHHMM(item.metaMinutos),
+            minutesToHHMM(saldoDia)
+          ]);
+        });
+      });
+    }
+
+    initMobileMenu();
+    initAdminMenu({ groupSelector: '#adminNavGroup', open: true });
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    const today = new Date();
+    rMes.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    rMes.addEventListener('change', carregarRelatorioMensal);
+    rFuncMes.addEventListener('change', carregarRelatorioMensal);
+
+    btnExportarRelatorioMes.addEventListener('click', () => {
+      if (!linhasRelatorioMensal.length) {
+        showMsg('Nao ha dados no relatorio mensal para exportar.', 'error');
+        return;
+      }
+
+      exportarCsvComSecoes({
+        fileName: `relatorio-mensal-${rMes.value}.csv`,
+        sections: [
+          {
+            title: 'Resumo',
+            headers: ['Mes', 'Funcionario', 'Horas trabalhadas', 'Meta mensal', 'Saldo total'],
+            rows: linhasRelatorioMensal
+          },
+          {
+            title: 'Dia a dia',
+            headers: ['Mes', 'Funcionario', 'Data', 'Entrada', 'Inicio intervalo', 'Fim intervalo', 'Saida', 'Horas trabalhadas', 'Meta do dia', 'Saldo do dia'],
+            rows: linhasRelatorioMensalDetalhado
+          }
+        ]
+      });
+    });
+
+    (async () => {
+      try {
+        if (!ensureAdminNavigationIntent()) return;
+        const ctx = await requireAdmin();
+        if (!ctx) return;
+        const funcionarios = await listarFuncionarios();
+        rFuncMes.innerHTML = ['<option value="">Todos</option>'].concat(funcionarios.map((f) => `<option value="${f.id}">${f.nome}</option>`)).join('');
+        await carregarRelatorioMensal();
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Funcionarios - Admin - Martree</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-kicker">Martree</div>
+        <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+        <div class="brand-meta">
+          <div class="brand">Controle de Ponto</div>
+          <div class="brand-subtitle">Gestao administrativa para equipes, escalas, ajustes manuais e relatorios.</div>
+        </div>
+      </div>
+      <button id="mobileMenuBtn" class="menu-toggle" type="button" aria-expanded="false" aria-label="Abrir menu">Menu</button>
+      <div class="stack">
+        <p class="sidebar-section-title">Navegacao</p>
+        <nav class="sidebar-nav">
+          <a href="./dashboard.html">Dashboard</a>
+          <a href="./meu-mes.html">Meu Mes</a>
+          <div id="adminNavGroup" class="admin-nav-group is-open">
+            <button id="navAdminToggle" class="submenu-toggle active" type="button" aria-expanded="true">Admin</button>
+            <div class="sidebar-subnav">
+            <a href="./admin-horas-geral.html" class="subnav-link">Horas geral</a>
+            <a href="./admin-funcionarios.html" class="subnav-link active">Funcionarios</a>
+            <a href="./admin-escala.html" class="subnav-link">Escala semanal</a>
+            <a href="./admin-editar-ponto.html" class="subnav-link">Editar ponto</a>
+            <a href="./admin-relatorio-diario.html" class="subnav-link">Relatorio diario</a>
+            <a href="./admin-relatorio-mensal.html" class="subnav-link">Relatorio mensal</a>
+          </div>
+          </div>
+          <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
+        </nav>
+      </div>
+      <div class="sidebar-footer">Ambiente central para consulta operacional, cadastros de apoio e acompanhamento gerencial.</div>
+    </aside>
+
+    <main class="main-content">
+      <div class="container page-shell">
+        <div id="msg"></div>
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Funcionarios</h2>
+              <p class="small">Visualizacao somente leitura do cadastro vinculado ao banco.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Cargo</th>
+                  <th>Admin</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyFuncionarios"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { requireAdmin, logout, ensureAdminNavigationIntent } from '../js/auth.js';
+    import { listarFuncionarios } from '../js/admin.js';
+    import { initMobileMenu } from '../js/mobileMenu.js';
+    import { initAdminMenu } from '../js/adminNav.js';
+
+    const msg = document.getElementById('msg');
+    const tbodyFuncionarios = document.getElementById('tbodyFuncionarios');
+
+    function showMsg(text, type = 'ok') {
+      msg.innerHTML = `<div class="msg ${type}">${text}</div>`;
+    }
+
+    initMobileMenu();
+    initAdminMenu({ groupSelector: '#adminNavGroup', open: true });
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    (async () => {
+      try {
+        if (!ensureAdminNavigationIntent()) return;
+        const ctx = await requireAdmin();
+        if (!ctx) return;
+        const funcionarios = await listarFuncionarios();
+        tbodyFuncionarios.innerHTML = '';
+        for (const f of funcionarios) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${f.nome}</td>
+            <td>${f.email}</td>
+            <td>${f.cargo}</td>
+            <td><span class="badge ${f.admin ? 'success' : ''}">${f.admin ? 'Sim' : 'Nao'}</span></td>
+          `;
+          tbodyFuncionarios.appendChild(tr);
+        }
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    })();
+  </script>
+</body>
+</html>

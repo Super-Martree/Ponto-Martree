@@ -15,7 +15,10 @@ export function initMobileMenu() {
   });
 
   sidebar.querySelectorAll('.sidebar-nav a, .sidebar-nav button').forEach((item) => {
-    item.addEventListener('click', closeMenu);
+    item.addEventListener('click', () => {
+      if (item.classList.contains('submenu-toggle')) return;
+      closeMenu();
+    });
   });
 
   window.addEventListener('resize', () => {
