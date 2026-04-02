@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Martree</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="login-page">
+  <div class="login-shell">
+    <section class="login-panel">
+      <div class="login-panel-content">
+        <div class="login-panel-top">
+          <div class="brand-kicker">Painel Corporativo</div>
+          <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+          <h1>Controle de ponto com visual profissional e opera&ccedil;&atilde;o centralizada.</h1>
+          <p>
+            Acesse o painel para registrar jornada, acompanhar saldo de horas e consultar relat&oacute;rios em um ambiente
+            corporativo, responsivo e consistente.
+          </p>
+        </div>
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-icon">01</div>
+            <div>
+              <strong>Registro r&aacute;pido</strong>
+              <span>Entrada, intervalo e sa&iacute;da organizados em poucos cliques.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">02</div>
+            <div>
+              <strong>Vis&atilde;o operacional</strong>
+              <span>Indicadores claros para leitura imediata em desktop e mobile.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">03</div>
+            <div>
+              <strong>Gest&atilde;o administrativa</strong>
+              <span>Relat&oacute;rios e ajustes manuais com padr&atilde;o visual unificado.</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="login-panel-footer">
+          Martree • Sistema interno de controle de ponto
+        </p>
+      </div>
+    </section>
+
+    <section class="login-card">
+      <div class="login-brand-wrap">
+        <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+        <div class="brand-meta">
+          <div class="company-tag">Martree</div>
+          <div class="brand">Acesso</div>
+        </div>
+      </div>
+
+      <div class="login-heading">
+        <h1>Entrar no sistema</h1>
+        <p class="page-subtitle">Use seu e-mail corporativo e sua senha para acessar o painel.</p>
+      </div>
+
+      <form id="loginForm" class="login-form">
+        <div>
+          <label for="email">E-mail</label>
+          <input id="email" type="email" autocomplete="email" required />
+        </div>
+
+        <div>
+          <label for="senha">Senha</label>
+          <input id="senha" type="password" autocomplete="current-password" required />
+        </div>
+
+        <button type="submit">Entrar</button>
+      </form>
+
+      <div id="msg"></div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { login, getUser } from '../js/auth.js';
+    const form = document.getElementById('loginForm');
+    const msg = document.getElementById('msg');
+
+    (async () => {
+      const user = await getUser();
+      if (user) window.location.href = './dashboard.html';
+    })();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.innerHTML = '';
+
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value;
+
+      try {
+        await login(email, senha);
+        window.location.href = './dashboard.html';
+      } catch (error) {
+        const friendly = error?.status === 400
+          ? 'E-mail ou senha inv\u00e1lidos.'
+          : error.message;
+        msg.innerHTML = `<div class="msg error">${friendly}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>
