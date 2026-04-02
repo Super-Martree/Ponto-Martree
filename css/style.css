@@ -915,6 +915,8 @@ tbody tr:last-child td {
   display: grid;
   gap: 12px;
   align-items: end;
+  min-width: 0;
+  width: 100%;
 }
 
 .mini-chart {
@@ -927,6 +929,7 @@ tbody tr:last-child td {
 
 .mini-bar-wrap,
 .mini-duo-wrap {
+  min-width: 0;
   padding: 14px 10px;
   border-radius: 18px;
   border: 1px solid var(--border);
@@ -982,6 +985,8 @@ tbody tr:last-child td {
   font-size: 12px;
   font-weight: 700;
   color: var(--text);
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 @media (max-width: 1180px) {
