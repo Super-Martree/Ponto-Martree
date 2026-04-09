@@ -764,6 +764,30 @@ tbody tr:hover {
   background: #f9fcfa;
 }
 
+tbody tr.dia-util {
+  background: #f6faf7;
+}
+
+tbody tr.dia-sabado {
+  background: #e7efe9;
+}
+
+tbody tr.dia-domingo {
+  background: #d8e2db;
+}
+
+tbody tr.dia-util:hover {
+  background: #eef5f0;
+}
+
+tbody tr.dia-sabado:hover {
+  background: #dde8e1;
+}
+
+tbody tr.dia-domingo:hover {
+  background: #ccd8d0;
+}
+
 tbody tr:last-child td {
   border-bottom: 0;
 }

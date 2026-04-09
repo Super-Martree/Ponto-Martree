@@ -47,7 +47,7 @@
           <div class="section-head">
             <div>
               <h2>Relatorio mensal</h2>
-              <p class="small">Indicadores consolidados por funcionario para fechamento e acompanhamento gerencial.</p>
+              <p class="small">Visualizacao completa do mes de um funcionario por vez, com leitura diaria para conferencia e fechamento.</p>
             </div>
             <button id="exportarRelatorioMes" type="button" class="secondary">Exportar CSV</button>
           </div>
@@ -61,14 +61,19 @@
               <select id="rFuncMes"></select>
             </div>
           </div>
-          <div class="table-wrap">
+            <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Funcionario</th>
+                  <th>Data</th>
+                  <th>Dia da semana</th>
                   <th>Horas trabalhadas</th>
-                  <th>Meta mensal</th>
-                  <th>Saldo total</th>
+                  <th>Meta do dia</th>
+                  <th>Saldo do dia</th>
+                  <th>Entrada</th>
+                  <th>Inicio intervalo</th>
+                  <th>Fim intervalo</th>
+                  <th>Saida</th>
                 </tr>
               </thead>
               <tbody id="tbodyMes"></tbody>
@@ -110,7 +115,56 @@
       return String(value || '').slice(0, 10);
     }
 
+    function parseDateUTC(dateString) {
+      return new Date(`${dateString}T00:00:00Z`);
+    }
+
+    function formatarDataPadrao(dateString) {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'UTC'
+      }).format(parseDateUTC(dateString));
+    }
+
+    function formatarDiaSemana(dateString) {
+      const texto = new Intl.DateTimeFormat('pt-BR', {
+        weekday: 'long',
+        timeZone: 'UTC'
+      }).format(parseDateUTC(dateString));
+
+      return texto.charAt(0).toUpperCase() + texto.slice(1);
+    }
+
+    function getClasseDiaSemana(dateString) {
+      const diaSemana = parseDateUTC(dateString).getUTCDay();
+      if (diaSemana === 0) return 'dia-domingo';
+      if (diaSemana === 6) return 'dia-sabado';
+      return 'dia-util';
+    }
+
+    function listarDiasDoMes(anoMes) {
+      const [ano, mes] = anoMes.split('-').map(Number);
+      const data = new Date(Date.UTC(ano, mes - 1, 1));
+      const dias = [];
+
+      while (data.getUTCMonth() === mes - 1) {
+        dias.push(data.toISOString().slice(0, 10));
+        data.setUTCDate(data.getUTCDate() + 1);
+      }
+
+      return dias;
+    }
+
     async function carregarRelatorioMensal() {
+      if (!rFuncMes.value) {
+        tbodyMes.innerHTML = '';
+        linhasRelatorioMensal = [];
+        linhasRelatorioMensalDetalhado = [];
+        return;
+      }
+
       const [ano, mes] = rMes.value.split('-').map(Number);
       const inicioMes = `${rMes.value}-01`;
       const proximoMes = new Date(ano, mes, 1);
@@ -133,64 +187,85 @@
 
       const pontos = await listarPontosPorMes({
         anoMes: rMes.value,
-        funcionarioId: rFuncMes.value || null
+        funcionarioId: rFuncMes.value
       });
-
-      const agrupado = new Map();
-      for (const ponto of pontos) {
-        const key = ponto.funcionario_id;
-        const funcionario = ponto.funcionarios;
-        if (!agrupado.has(key)) agrupado.set(key, { funcionario, lista: [] });
-
-        const meta = getMetaDiaria({
-          id: funcionario?.id,
-          trabalha_sabado: funcionario?.trabalha_sabado
-        }, ponto.data, { escalaSabadoMap });
-
-        agrupado.get(key).lista.push({
-          ...ponto,
-          metaMinutos: meta,
-          funcionario: { id: funcionario?.id, trabalha_sabado: funcionario?.trabalha_sabado }
-        });
-      }
 
       tbodyMes.innerHTML = '';
       linhasRelatorioMensal = [];
       linhasRelatorioMensalDetalhado = [];
 
-      agrupado.forEach((value) => {
-        const total = calcularSaldoMes(value.lista);
-        const funcionarioNome = value.funcionario?.nome || '-';
-        const horasTexto = minutesToHHMM(total.totalMinutosTrabalhados);
-        const metaTexto = minutesToHHMM(total.totalMetaMinutos);
-        const saldoTexto = minutesToHHMM(total.saldoAcumulado);
+      const mapaPontos = new Map((pontos || []).map((ponto) => [normalizarDataISO(ponto.data), ponto]));
+      const funcionarioBase = pontos[0]?.funcionarios || Array.from(rFuncMes.options).find((option) => option.value === rFuncMes.value)?.textContent || '-';
+      const funcionarioMeta = typeof funcionarioBase === 'string'
+        ? { id: rFuncMes.value, nome: funcionarioBase }
+        : funcionarioBase;
+      const funcionarioNome = funcionarioMeta?.nome || '-';
+
+      const linhas = listarDiasDoMes(rMes.value).map((dataDia) => {
+        const ponto = mapaPontos.get(dataDia) || null;
+        const meta = getMetaDiaria({
+          id: funcionarioMeta?.id,
+          trabalha_sabado: funcionarioMeta?.trabalha_sabado
+        }, dataDia, { escalaSabadoMap });
+        const horasDia = calcularHorasTrabalhadas(ponto);
+        const saldoDia = horasDia !== null ? horasDia - meta : null;
+
+        return {
+          data: dataDia,
+          entrada: ponto?.entrada || null,
+          inicio_intervalo: ponto?.inicio_intervalo || null,
+          fim_intervalo: ponto?.fim_intervalo || null,
+          saida: ponto?.saida || null,
+          horasMinutos: horasDia,
+          metaMinutos: meta,
+          saldoMinutos: saldoDia
+        };
+      });
+
+      const total = calcularSaldoMes(linhas.map((item) => ({
+        ...item,
+        funcionario: funcionarioMeta,
+        horasTrabalhadasMinutos: item.horasMinutos
+      })));
+
+      linhasRelatorioMensal.push([
+        rMes.value,
+        funcionarioNome,
+        minutesToHHMM(total.totalMinutosTrabalhados),
+        minutesToHHMM(total.totalMetaMinutos),
+        minutesToHHMM(total.saldoAcumulado)
+      ]);
+
+      for (const item of linhas) {
         const tr = document.createElement('tr');
+        tr.className = getClasseDiaSemana(item.data);
         tr.innerHTML = `
-          <td>${funcionarioNome}</td>
-          <td>${horasTexto}</td>
-          <td>${metaTexto}</td>
-          <td class="${saldoClass(total.saldoAcumulado)}">${saldoTexto}</td>
+          <td>${formatarDataPadrao(item.data)}</td>
+          <td>${formatarDiaSemana(item.data)}</td>
+          <td>${minutesToHHMM(item.horasMinutos)}</td>
+          <td>${minutesToHHMM(item.metaMinutos)}</td>
+          <td class="${saldoClass(item.saldoMinutos ?? 0)}">${minutesToHHMM(item.saldoMinutos)}</td>
+          <td>${item.entrada || '--:--'}</td>
+          <td>${item.inicio_intervalo || '--:--'}</td>
+          <td>${item.fim_intervalo || '--:--'}</td>
+          <td>${item.saida || '--:--'}</td>
         `;
         tbodyMes.appendChild(tr);
-        linhasRelatorioMensal.push([rMes.value, funcionarioNome, horasTexto, metaTexto, saldoTexto]);
 
-        value.lista.slice().sort((a, b) => String(a.data).localeCompare(String(b.data))).forEach((item) => {
-          const horasDia = item.horasTrabalhadasMinutos ?? calcularHorasTrabalhadas(item);
-          const saldoDia = item.saldoMinutos ?? (horasDia !== null ? calcularSaldoMes([item]).saldoAcumulado : null);
-          linhasRelatorioMensalDetalhado.push([
-            rMes.value,
-            funcionarioNome,
-            item.data,
-            item.entrada || '--:--',
-            item.inicio_intervalo || '--:--',
-            item.fim_intervalo || '--:--',
-            item.saida || '--:--',
-            minutesToHHMM(horasDia),
-            minutesToHHMM(item.metaMinutos),
-            minutesToHHMM(saldoDia)
-          ]);
-        });
-      });
+        linhasRelatorioMensalDetalhado.push([
+          rMes.value,
+          funcionarioNome,
+          formatarDataPadrao(item.data),
+          formatarDiaSemana(item.data),
+          item.entrada || '--:--',
+          item.inicio_intervalo || '--:--',
+          item.fim_intervalo || '--:--',
+          item.saida || '--:--',
+          minutesToHHMM(item.horasMinutos),
+          minutesToHHMM(item.metaMinutos),
+          minutesToHHMM(item.saldoMinutos)
+        ]);
+      }
     }
 
     initMobileMenu();
@@ -217,7 +292,7 @@
           },
           {
             title: 'Dia a dia',
-            headers: ['Mes', 'Funcionario', 'Data', 'Entrada', 'Inicio intervalo', 'Fim intervalo', 'Saida', 'Horas trabalhadas', 'Meta do dia', 'Saldo do dia'],
+            headers: ['Mes', 'Funcionario', 'Data', 'Dia da semana', 'Entrada', 'Inicio intervalo', 'Fim intervalo', 'Saida', 'Horas trabalhadas', 'Meta do dia', 'Saldo do dia'],
             rows: linhasRelatorioMensalDetalhado
           }
         ]
@@ -230,7 +305,7 @@
         const ctx = await requireAdmin();
         if (!ctx) return;
         const funcionarios = await listarFuncionarios();
-        rFuncMes.innerHTML = ['<option value="">Todos</option>'].concat(funcionarios.map((f) => `<option value="${f.id}">${f.nome}</option>`)).join('');
+        rFuncMes.innerHTML = ['<option value="">Selecione um funcionario</option>'].concat(funcionarios.map((f) => `<option value="${f.id}">${f.nome}</option>`)).join('');
         await carregarRelatorioMensal();
       } catch (error) {
         showMsg(error.message, 'error');

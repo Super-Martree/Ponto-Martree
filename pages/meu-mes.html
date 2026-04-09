@@ -100,6 +100,7 @@
               <thead>
                 <tr>
                   <th>Data</th>
+                  <th>Dia da semana</th>
                   <th>Entrada</th>
                   <th>In&iacute;cio intervalo</th>
                   <th>Fim intervalo</th>
@@ -146,6 +147,48 @@
 
     function normalizarDataISO(value) {
       return String(value || '').slice(0, 10);
+    }
+
+    function parseDateUTC(dateString) {
+      return new Date(`${dateString}T00:00:00Z`);
+    }
+
+    function formatarDataPadrao(dateString) {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'UTC'
+      }).format(parseDateUTC(dateString));
+    }
+
+    function formatarDiaSemana(dateString) {
+      const texto = new Intl.DateTimeFormat('pt-BR', {
+        weekday: 'long',
+        timeZone: 'UTC'
+      }).format(parseDateUTC(dateString));
+
+      return texto.charAt(0).toUpperCase() + texto.slice(1);
+    }
+
+    function getClasseDiaSemana(dateString) {
+      const diaSemana = parseDateUTC(dateString).getUTCDay();
+      if (diaSemana === 0) return 'dia-domingo';
+      if (diaSemana === 6) return 'dia-sabado';
+      return 'dia-util';
+    }
+
+    function listarDiasDoMes(anoMes) {
+      const [ano, mes] = anoMes.split('-').map(Number);
+      const data = new Date(Date.UTC(ano, mes - 1, 1));
+      const dias = [];
+
+      while (data.getUTCMonth() === mes - 1) {
+        dias.push(data.toISOString().slice(0, 10));
+        data.setUTCDate(data.getUTCDate() + 1);
+      }
+
+      return dias;
     }
 
     function formatarMesLabel(anoMes) {
@@ -265,27 +308,36 @@
       tbody.innerHTML = '';
       linhasExportacaoMes = [];
 
-      const linhas = data.map((ponto) => {
+      const mapaPontos = new Map((data || []).map((ponto) => [normalizarDataISO(ponto.data), ponto]));
+      const linhas = listarDiasDoMes(mes).map((dataDia) => {
+        const ponto = mapaPontos.get(dataDia) || null;
         const horas = calcularHorasTrabalhadas(ponto);
-        const meta = getMetaDiaria(funcionario, ponto.data, { escalaSabadoMap });
+        const meta = getMetaDiaria(funcionario, dataDia, { escalaSabadoMap });
         const saldo = calcularSaldoDia(meta, horas);
         return {
-          ...ponto,
+          data: dataDia,
+          entrada: ponto?.entrada || null,
+          inicio_intervalo: ponto?.inicio_intervalo || null,
+          fim_intervalo: ponto?.fim_intervalo || null,
+          saida: ponto?.saida || null,
           horasTrabalhadasMinutos: horas,
           metaMinutos: meta,
           saldoMinutos: saldo,
+          temPonto: Boolean(ponto),
           funcionario
         };
       });
 
       for (const item of linhas) {
         const tr = document.createElement('tr');
+        tr.className = getClasseDiaSemana(item.data);
         const saldoDiaClass = saldoClass(item.saldoMinutos ?? 0);
         const horasTexto = minutesToHHMM(item.horasTrabalhadasMinutos);
         const metaTexto = minutesToHHMM(item.metaMinutos);
         const saldoTexto = minutesToHHMM(item.saldoMinutos);
         tr.innerHTML = `
-          <td>${item.data}</td>
+          <td>${formatarDataPadrao(item.data)}</td>
+          <td>${formatarDiaSemana(item.data)}</td>
           <td>${item.entrada || '--:--'}</td>
           <td>${item.inicio_intervalo || '--:--'}</td>
           <td>${item.fim_intervalo || '--:--'}</td>
@@ -296,7 +348,8 @@
         `;
         tbody.appendChild(tr);
         linhasExportacaoMes.push([
-          item.data,
+          formatarDataPadrao(item.data),
+          formatarDiaSemana(item.data),
           item.entrada || '--:--',
           item.inicio_intervalo || '--:--',
           item.fim_intervalo || '--:--',
@@ -333,7 +386,7 @@
 
       exportarCsv({
         fileName: `meu-mes-${mesInput.value}.csv`,
-        headers: ['Data', 'Entrada', 'Inicio intervalo', 'Fim intervalo', 'Saida', 'Horas trabalhadas', 'Meta do dia', 'Saldo do dia'],
+        headers: ['Data', 'Dia da semana', 'Entrada', 'Inicio intervalo', 'Fim intervalo', 'Saida', 'Horas trabalhadas', 'Meta do dia', 'Saldo do dia'],
         rows: linhasExportacaoMes
       });
     });
