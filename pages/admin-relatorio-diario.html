@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatorio Diario - Admin - Martree</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-kicker">Martree</div>
+        <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+        <div class="brand-meta">
+          <div class="brand">Controle de Ponto</div>
+          <div class="brand-subtitle">Gestao administrativa para equipes, escalas, ajustes manuais e relatorios.</div>
+        </div>
+      </div>
+      <button id="mobileMenuBtn" class="menu-toggle" type="button" aria-expanded="false" aria-label="Abrir menu">Menu</button>
+      <div class="stack">
+        <p class="sidebar-section-title">Navegacao</p>
+        <nav class="sidebar-nav">
+          <a href="./dashboard.html">Dashboard</a>
+          <a href="./meu-mes.html">Meu Mes</a>
+          <div id="adminNavGroup" class="admin-nav-group is-open">
+            <button id="navAdminToggle" class="submenu-toggle active" type="button" aria-expanded="true">Admin</button>
+            <div class="sidebar-subnav">
+            <a href="./admin-horas-geral.html" class="subnav-link">Horas geral</a>
+            <a href="./admin-funcionarios.html" class="subnav-link">Funcionarios</a>
+            <a href="./admin-escala.html" class="subnav-link">Escala semanal</a>
+            <a href="./admin-editar-ponto.html" class="subnav-link">Editar ponto</a>
+            <a href="./admin-relatorio-diario.html" class="subnav-link active">Relatorio diario</a>
+            <a href="./admin-relatorio-mensal.html" class="subnav-link">Relatorio mensal</a>
+          </div>
+          </div>
+          <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
+        </nav>
+      </div>
+      <div class="sidebar-footer">Ambiente central para consulta operacional, cadastros de apoio e acompanhamento gerencial.</div>
+    </aside>
+
+    <main class="main-content">
+      <div class="container page-shell">
+        <div id="msg"></div>
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Relatorio diario</h2>
+              <p class="small">Consulta do status de ponto por dia com filtros compactos e leitura clara.</p>
+            </div>
+            <button id="exportarRelatorioDia" type="button" class="secondary">Exportar CSV</button>
+          </div>
+          <div class="row">
+            <div class="col col-3">
+              <label for="rData">Data</label>
+              <input id="rData" type="date" />
+            </div>
+            <div class="col col-4">
+              <label for="rFuncDia">Funcionario</label>
+              <select id="rFuncDia"></select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Funcionario</th>
+                  <th>Entrada</th>
+                  <th>Saida</th>
+                  <th>Horas trabalhadas</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyDia"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { requireAdmin, logout, ensureAdminNavigationIntent } from '../js/auth.js';
+    import { listarFuncionarios, relatorioDiario } from '../js/admin.js';
+    import { exportarCsv } from '../js/csvExport.js';
+    import { calcularHorasTrabalhadas, minutesToHHMM } from '../js/horas.js';
+    import { initMobileMenu } from '../js/mobileMenu.js';
+    import { initAdminMenu } from '../js/adminNav.js';
+
+    const msg = document.getElementById('msg');
+    const rData = document.getElementById('rData');
+    const rFuncDia = document.getElementById('rFuncDia');
+    const tbodyDia = document.getElementById('tbodyDia');
+    const btnExportarRelatorioDia = document.getElementById('exportarRelatorioDia');
+    let linhasRelatorioDiario = [];
+
+    function showMsg(text, type = 'ok') {
+      msg.innerHTML = `<div class="msg ${type}">${text}</div>`;
+    }
+
+    async function carregarRelatorioDiario() {
+      const registros = await relatorioDiario({
+        data: rData.value,
+        funcionarioId: rFuncDia.value || null
+      });
+
+      tbodyDia.innerHTML = '';
+      linhasRelatorioDiario = [];
+
+      for (const item of registros) {
+        const horas = item.ponto ? calcularHorasTrabalhadas(item.ponto) : null;
+        const status = item.ponto ? '<span class="badge success">OK</span>' : '<span class="badge warning">Nao bateu ponto</span>';
+        const statusTexto = item.ponto ? 'OK' : 'Nao bateu ponto';
+        const entrada = item.ponto?.entrada || '--:--';
+        const saida = item.ponto?.saida || '--:--';
+        const horasTexto = minutesToHHMM(horas);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.funcionario.nome}</td>
+          <td>${entrada}</td>
+          <td>${saida}</td>
+          <td>${horasTexto}</td>
+          <td>${status}</td>
+        `;
+        tbodyDia.appendChild(tr);
+        linhasRelatorioDiario.push([rData.value, item.funcionario.nome, entrada, saida, horasTexto, statusTexto]);
+      }
+    }
+
+    initMobileMenu();
+    initAdminMenu({ groupSelector: '#adminNavGroup', open: true });
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    rData.value = new Date().toISOString().slice(0, 10);
+    rData.addEventListener('change', carregarRelatorioDiario);
+    rFuncDia.addEventListener('change', carregarRelatorioDiario);
+
+    btnExportarRelatorioDia.addEventListener('click', () => {
+      if (!linhasRelatorioDiario.length) {
+        showMsg('Nao ha dados no relatorio diario para exportar.', 'error');
+        return;
+      }
+
+      exportarCsv({
+        fileName: `relatorio-diario-${rData.value}.csv`,
+        headers: ['Data', 'Funcionario', 'Entrada', 'Saida', 'Horas trabalhadas', 'Status'],
+        rows: linhasRelatorioDiario
+      });
+    });
+
+    (async () => {
+      try {
+        if (!ensureAdminNavigationIntent()) return;
+        const ctx = await requireAdmin();
+        if (!ctx) return;
+        const funcionarios = await listarFuncionarios();
+        rFuncDia.innerHTML = ['<option value="">Todos</option>'].concat(funcionarios.map((f) => `<option value="${f.id}">${f.nome}</option>`)).join('');
+        await carregarRelatorioDiario();
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    })();
+  </script>
+</body>
+</html>

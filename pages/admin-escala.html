@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Escala Semanal - Admin - Martree</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-kicker">Martree</div>
+        <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+        <div class="brand-meta">
+          <div class="brand">Controle de Ponto</div>
+          <div class="brand-subtitle">Gestao administrativa para equipes, escalas, ajustes manuais e relatorios.</div>
+        </div>
+      </div>
+      <button id="mobileMenuBtn" class="menu-toggle" type="button" aria-expanded="false" aria-label="Abrir menu">Menu</button>
+      <div class="stack">
+        <p class="sidebar-section-title">Navegacao</p>
+        <nav class="sidebar-nav">
+          <a href="./dashboard.html">Dashboard</a>
+          <a href="./meu-mes.html">Meu Mes</a>
+          <div id="adminNavGroup" class="admin-nav-group is-open">
+            <button id="navAdminToggle" class="submenu-toggle active" type="button" aria-expanded="true">Admin</button>
+            <div class="sidebar-subnav">
+            <a href="./admin-horas-geral.html" class="subnav-link">Horas geral</a>
+            <a href="./admin-funcionarios.html" class="subnav-link">Funcionarios</a>
+            <a href="./admin-escala.html" class="subnav-link active">Escala semanal</a>
+            <a href="./admin-editar-ponto.html" class="subnav-link">Editar ponto</a>
+            <a href="./admin-relatorio-diario.html" class="subnav-link">Relatorio diario</a>
+            <a href="./admin-relatorio-mensal.html" class="subnav-link">Relatorio mensal</a>
+          </div>
+          </div>
+          <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
+        </nav>
+      </div>
+      <div class="sidebar-footer">Ambiente central para consulta operacional, cadastros de apoio e acompanhamento gerencial.</div>
+    </aside>
+
+    <main class="main-content">
+      <div class="container page-shell">
+        <div id="msg"></div>
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Escala semanal de sabado</h2>
+              <p class="small">Defina por semana se o funcionario trabalha no sabado.</p>
+            </div>
+          </div>
+          <form id="escalaForm" class="stack">
+            <div class="row">
+              <div class="col col-4">
+                <label for="eFuncionario">Funcionario</label>
+                <select id="eFuncionario" required></select>
+              </div>
+              <div class="col col-4">
+                <label for="eDataSemana">Data da semana</label>
+                <input id="eDataSemana" type="date" required />
+              </div>
+              <div class="col col-4">
+                <label for="eTrabalhaSabado">Trabalha no sabado?</label>
+                <select id="eTrabalhaSabado">
+                  <option value="true">Sim</option>
+                  <option value="false">Nao</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit">Salvar escala da semana</button>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { requireAdmin, logout, ensureAdminNavigationIntent } from '../js/auth.js';
+    import { listarFuncionarios, salvarEscalaSabadoSemanal } from '../js/admin.js';
+    import { getInicioSemanaISO } from '../js/horas.js';
+    import { initMobileMenu } from '../js/mobileMenu.js';
+    import { initAdminMenu } from '../js/adminNav.js';
+
+    const msg = document.getElementById('msg');
+    const escalaForm = document.getElementById('escalaForm');
+    const eFuncionario = document.getElementById('eFuncionario');
+    const eDataSemana = document.getElementById('eDataSemana');
+
+    function showMsg(text, type = 'ok') {
+      msg.innerHTML = `<div class="msg ${type}">${text}</div>`;
+    }
+
+    initMobileMenu();
+    initAdminMenu({ groupSelector: '#adminNavGroup', open: true });
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    eDataSemana.value = new Date().toISOString().slice(0, 10);
+
+    escalaForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await salvarEscalaSabadoSemanal({
+          funcionarioId: eFuncionario.value,
+          semanaInicio: getInicioSemanaISO(eDataSemana.value),
+          trabalhaSabado: document.getElementById('eTrabalhaSabado').value === 'true'
+        });
+        showMsg(`Escala semanal salva (${getInicioSemanaISO(eDataSemana.value)}) com sucesso.`);
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    });
+
+    (async () => {
+      try {
+        if (!ensureAdminNavigationIntent()) return;
+        const ctx = await requireAdmin();
+        if (!ctx) return;
+        const funcionarios = await listarFuncionarios();
+        eFuncionario.innerHTML = funcionarios.map((f) => `<option value="${f.id}">${f.nome}</option>`).join('');
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    })();
+  </script>
+</body>
+</html>

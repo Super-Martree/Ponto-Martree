@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editar Ponto - Admin - Martree</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-block">
+        <div class="brand-kicker">Martree</div>
+        <div class="brand-logo-slot"><img src="../assets/logomartree.png" alt="Logo Martree" /></div>
+        <div class="brand-meta">
+          <div class="brand">Controle de Ponto</div>
+          <div class="brand-subtitle">Gestao administrativa para equipes, escalas, ajustes manuais e relatorios.</div>
+        </div>
+      </div>
+      <button id="mobileMenuBtn" class="menu-toggle" type="button" aria-expanded="false" aria-label="Abrir menu">Menu</button>
+      <div class="stack">
+        <p class="sidebar-section-title">Navegacao</p>
+        <nav class="sidebar-nav">
+          <a href="./dashboard.html">Dashboard</a>
+          <a href="./meu-mes.html">Meu Mes</a>
+          <div id="adminNavGroup" class="admin-nav-group is-open">
+            <button id="navAdminToggle" class="submenu-toggle active" type="button" aria-expanded="true">Admin</button>
+            <div class="sidebar-subnav">
+            <a href="./admin-horas-geral.html" class="subnav-link">Horas geral</a>
+            <a href="./admin-funcionarios.html" class="subnav-link">Funcionarios</a>
+            <a href="./admin-escala.html" class="subnav-link">Escala semanal</a>
+            <a href="./admin-editar-ponto.html" class="subnav-link active">Editar ponto</a>
+            <a href="./admin-relatorio-diario.html" class="subnav-link">Relatorio diario</a>
+            <a href="./admin-relatorio-mensal.html" class="subnav-link">Relatorio mensal</a>
+          </div>
+          </div>
+          <button id="logoutBtn" class="secondary nav-danger" type="button">Sair</button>
+        </nav>
+      </div>
+      <div class="sidebar-footer">Ambiente central para consulta operacional, cadastros de apoio e acompanhamento gerencial.</div>
+    </aside>
+
+    <main class="main-content">
+      <div class="container page-shell">
+        <div id="msg"></div>
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Edicao manual de ponto</h2>
+              <p class="small">Ajuste registros especificos mantendo a logica atual.</p>
+            </div>
+          </div>
+          <form id="pontoForm" class="stack">
+            <div class="row">
+              <div class="col col-4">
+                <label for="pFuncionario">Funcionario</label>
+                <select id="pFuncionario" required></select>
+              </div>
+              <div class="col col-4">
+                <label for="pData">Data</label>
+                <input id="pData" type="date" required />
+              </div>
+              <div class="col col-4">
+                <label for="pEntrada">Entrada</label>
+                <input id="pEntrada" type="time" />
+              </div>
+              <div class="col col-4">
+                <label for="pInicio">Inicio do intervalo</label>
+                <input id="pInicio" type="time" />
+              </div>
+              <div class="col col-4">
+                <label for="pFim">Fim do intervalo</label>
+                <input id="pFim" type="time" />
+              </div>
+              <div class="col col-4">
+                <label for="pSaida">Saida</label>
+                <input id="pSaida" type="time" />
+              </div>
+            </div>
+            <button type="submit">Salvar ponto manual</button>
+          </form>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { requireAdmin, logout, ensureAdminNavigationIntent } from '../js/auth.js';
+    import { buscarPontoPorFuncionarioData, listarFuncionarios, salvarPontoManual } from '../js/admin.js';
+    import { initMobileMenu } from '../js/mobileMenu.js';
+    import { initAdminMenu } from '../js/adminNav.js';
+
+    const msg = document.getElementById('msg');
+    const pontoForm = document.getElementById('pontoForm');
+    const pFuncionario = document.getElementById('pFuncionario');
+    const pData = document.getElementById('pData');
+    const pEntrada = document.getElementById('pEntrada');
+    const pInicio = document.getElementById('pInicio');
+    const pFim = document.getElementById('pFim');
+    const pSaida = document.getElementById('pSaida');
+    pData.value = new Date().toISOString().slice(0, 10);
+
+    function showMsg(text, type = 'ok') {
+      msg.innerHTML = `<div class="msg ${type}">${text}</div>`;
+    }
+
+    function normalizarHoraInput(value) {
+      return value ? String(value).slice(0, 5) : '';
+    }
+
+    function preencherCamposPonto(ponto) {
+      pEntrada.value = normalizarHoraInput(ponto?.entrada);
+      pInicio.value = normalizarHoraInput(ponto?.inicio_intervalo);
+      pFim.value = normalizarHoraInput(ponto?.fim_intervalo);
+      pSaida.value = normalizarHoraInput(ponto?.saida);
+    }
+
+    async function carregarPontoExistente({ mostrarMensagem = true } = {}) {
+      if (!pFuncionario.value || !pData.value) {
+        preencherCamposPonto(null);
+        return;
+      }
+
+      try {
+        const ponto = await buscarPontoPorFuncionarioData({
+          funcionarioId: pFuncionario.value,
+          data: pData.value
+        });
+        preencherCamposPonto(ponto);
+        if (mostrarMensagem) {
+          if (ponto) {
+            showMsg('Ponto existente carregado. Altere apenas o campo necessario e salve.');
+          } else {
+            showMsg('Nenhum ponto existente para este funcionario nesta data.');
+          }
+        }
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    }
+
+    initMobileMenu();
+    initAdminMenu({ groupSelector: '#adminNavGroup', open: true });
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    pontoForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await salvarPontoManual({
+          funcionario_id: pFuncionario.value,
+          data: pData.value,
+          entrada: pEntrada.value,
+          inicio_intervalo: pInicio.value,
+          fim_intervalo: pFim.value,
+          saida: pSaida.value
+        });
+        await carregarPontoExistente({ mostrarMensagem: false });
+        showMsg('Ponto manual salvo com sucesso.');
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    });
+
+    pFuncionario.addEventListener('change', carregarPontoExistente);
+    pData.addEventListener('change', carregarPontoExistente);
+
+    (async () => {
+      try {
+        if (!ensureAdminNavigationIntent()) return;
+        const ctx = await requireAdmin();
+        if (!ctx) return;
+        const funcionarios = await listarFuncionarios();
+        pFuncionario.innerHTML = funcionarios.map((f) => `<option value="${f.id}">${f.nome}</option>`).join('');
+        await carregarPontoExistente();
+      } catch (error) {
+        showMsg(error.message, 'error');
+      }
+    })();
+  </script>
+</body>
+</html>
