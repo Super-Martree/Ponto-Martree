@@ -857,6 +857,17 @@ tbody tr:last-child td {
   color: var(--danger);
 }
 
+.msg.warning {
+  background: var(--warning-soft);
+  border-color: rgba(211, 135, 31, 0.18);
+  color: var(--warning);
+}
+
+.pending-alert-panel {
+  display: grid;
+  gap: 14px;
+}
+
 .saldo-positivo {
   color: var(--success);
   font-weight: 800;

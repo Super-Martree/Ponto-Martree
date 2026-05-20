@@ -82,6 +82,46 @@
             </table>
           </div>
         </section>
+
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h2>Pontos sem saida registrada</h2>
+              <p class="small">Consulte por funcionario e mes os registros com entrada preenchida e sem saida.</p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col col-4">
+              <label for="filtroFuncionarioPendencia">Funcionario</label>
+              <select id="filtroFuncionarioPendencia"></select>
+            </div>
+            <div class="col col-3">
+              <label for="filtroMesPendencia">Mes</label>
+              <input id="filtroMesPendencia" type="month" />
+            </div>
+          </div>
+
+          <div class="pending-alert-panel">
+            <div id="alertaPontosSemSaida" class="msg warning hide"></div>
+            <div id="semPontosSemSaida" class="msg ok hide">Nenhum ponto com entrada e sem saida para os filtros selecionados.</div>
+            <div id="wrapPontosSemSaida" class="table-wrap hide">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Funcionario</th>
+                    <th>Data</th>
+                    <th>Entrada</th>
+                    <th>Inicio intervalo</th>
+                    <th>Fim intervalo</th>
+                    <th>Saida</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyPontosSemSaida"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   </div>
@@ -98,6 +138,12 @@
     const msg = document.getElementById('msg');
     const tbodyResumoAdmin = document.getElementById('tbodyResumoAdmin');
     const kpiFuncionarios = document.getElementById('kpiFuncionarios');
+    const filtroFuncionarioPendencia = document.getElementById('filtroFuncionarioPendencia');
+    const filtroMesPendencia = document.getElementById('filtroMesPendencia');
+    const alertaPontosSemSaida = document.getElementById('alertaPontosSemSaida');
+    const semPontosSemSaida = document.getElementById('semPontosSemSaida');
+    const wrapPontosSemSaida = document.getElementById('wrapPontosSemSaida');
+    const tbodyPontosSemSaida = document.getElementById('tbodyPontosSemSaida');
 
     function showMsg(text, type = 'ok') {
       msg.innerHTML = `<div class="msg ${type}">${text}</div>`;
@@ -111,6 +157,87 @@
 
     function normalizarDataISO(value) {
       return String(value || '').slice(0, 10);
+    }
+
+    function getMesAtualSistema() {
+      const hoje = new Date();
+      return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function getInicioMes(anoMes) {
+      return `${anoMes}-01`;
+    }
+
+    function getInicioProximoMes(anoMes) {
+      const [ano, mes] = anoMes.split('-').map(Number);
+      const data = new Date(Date.UTC(ano, mes, 1));
+      return data.toISOString().slice(0, 10);
+    }
+
+    function formatarDataPadrao(dateString) {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'UTC'
+      }).format(new Date(`${dateString}T00:00:00Z`));
+    }
+
+    function temEntradaSemSaida(ponto) {
+      return Boolean(ponto?.entrada && !ponto?.saida);
+    }
+
+    function popularFiltroFuncionarios(funcionarios) {
+      filtroFuncionarioPendencia.innerHTML = ['<option value="">Todos</option>']
+        .concat(funcionarios.map((f) => `<option value="${f.id}">${f.nome}</option>`))
+        .join('');
+    }
+
+    function renderPontosSemSaida(pontos) {
+      tbodyPontosSemSaida.innerHTML = '';
+      alertaPontosSemSaida.classList.toggle('hide', pontos.length === 0);
+      semPontosSemSaida.classList.toggle('hide', pontos.length > 0);
+      wrapPontosSemSaida.classList.toggle('hide', pontos.length === 0);
+
+      if (!pontos.length) return;
+
+      alertaPontosSemSaida.textContent = `${pontos.length} registro${pontos.length > 1 ? 's' : ''} com entrada registrada e sem saida.`;
+
+      for (const ponto of pontos) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${ponto.funcionarios?.nome || '-'}</td>
+          <td>${formatarDataPadrao(ponto.data)}</td>
+          <td>${ponto.entrada || '--:--'}</td>
+          <td>${ponto.inicio_intervalo || '--:--'}</td>
+          <td>${ponto.fim_intervalo || '--:--'}</td>
+          <td><span class="badge warning">Sem saida</span></td>
+        `;
+        tbodyPontosSemSaida.appendChild(tr);
+      }
+    }
+
+    async function carregarPontosSemSaidaAdmin() {
+      const inicio = getInicioMes(filtroMesPendencia.value);
+      const fim = getInicioProximoMes(filtroMesPendencia.value);
+
+      let query = supabase
+        .from('pontos')
+        .select('*, funcionarios(id, nome)')
+        .gte('data', inicio)
+        .lt('data', fim)
+        .not('entrada', 'is', null)
+        .is('saida', null)
+        .order('data', { ascending: true });
+
+      if (filtroFuncionarioPendencia.value) {
+        query = query.eq('funcionario_id', filtroFuncionarioPendencia.value);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      renderPontosSemSaida((data || []).filter(temEntradaSemSaida));
     }
 
     async function carregarDashboardAdmin() {
@@ -160,13 +287,19 @@
     initMobileMenu();
     initAdminMenu({ groupSelector: '#adminNavGroup', open: true });
     document.getElementById('logoutBtn').addEventListener('click', logout);
+    filtroMesPendencia.value = getMesAtualSistema();
+    filtroFuncionarioPendencia.addEventListener('change', carregarPontosSemSaidaAdmin);
+    filtroMesPendencia.addEventListener('change', carregarPontosSemSaidaAdmin);
 
     (async () => {
       try {
         if (!ensureAdminNavigationIntent()) return;
         const ctx = await requireAdmin();
         if (!ctx) return;
+        const funcionarios = await listarFuncionarios();
+        popularFiltroFuncionarios(funcionarios);
         await carregarDashboardAdmin();
+        await carregarPontosSemSaidaAdmin();
       } catch (error) {
         showMsg(error.message, 'error');
       }
